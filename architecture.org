@@ -13,6 +13,7 @@
 
 * Opcodes
 
+#+BEGIN_SRC
 PUSH reg              1000 RRRR
 POP  reg              1001 RRRR
 SET  reg              1010 RRRR
@@ -22,13 +23,14 @@ SETUP reg             1100 RRRR IPFF I=input/output P=pullup F=Filter
 SETUP CLOCK           1101 DDDD DDDD D=clock divisor
 SETUP TIMER period    1110 PPPP PPPP P=period
 
-SET TIMER reg         1111 RRRR 1MXX M=cycle/one-shot
+SET TIMER reg mode    1111 RRRR 1MXX M=cycle/one-shot
 RESET TIMER           1111 XXXX 0XXX
 
 NOT                   0000
 AND                   0001
 OR                    0010
 XOR                   0011
+#+END_SRC
 
 ** Filter
   - 0 None
