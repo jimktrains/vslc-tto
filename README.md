@@ -1,4 +1,8 @@
-![](../../workflows/gds/badge.svg) ![](../../workflows/docs/badge.svg) ![](../../workflows/test/badge.svg) ![](../../workflows/fpga/badge.svg)
+VSLP - Very Small Logic Processor
+===========================================
+
+A place for me to learn about ASIC design. Runs a stripped down version of
+the [VSCL](https://github.com/jimktrains/vscl).
 
 # Tiny Tapeout Verilog Project Template
 
