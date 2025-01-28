@@ -1,4 +1,4 @@
-# General Description
+* General Description
 
 - 4 bit nibbles
 - 1 bit databus
@@ -11,7 +11,7 @@
 - 1 8-bit timer/counter with clock divisor
 - 1 main clock divisor (to take the system/instruction clock to a cycle clock)
 
-# Opcodes
+* Opcodes
 
 PUSH reg              1000 RRRR
 POP  reg              1001 RRRR
@@ -30,8 +30,7 @@ AND                   0001
 OR                    0010
 XOR                   0011
 
-
-# Filter
+** Filter
   - 0 None
   - 1 Rising
   - 2 Faling
