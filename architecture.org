@@ -1,11 +1,19 @@
 * General Description
 
-- 4 bit nibbles
+- 4 bit nibbles as processor word size
 - 1 bit databus
-- 2 bit interface to load code
-- 6 input bits/registeres
-- 8 io bits/registers
-- 8 output bits/registers
+- stack machine
+  - stack is cleared on cycle start
+  - the reset vector is at 0x02
+  - memory 0x00 and 0x01 are the cycle start vector
+  - code executes until a cycle start happens or the end of code memory is
+    reached, _i.e._ no wrapping.
+- 3 bit interface to load code (SCK, COPI, ~PS)
+- 7 input bits/registers mapped to pins
+- 1 io bits/registers not mapped to a pin
+- 8 io bits/registers mapped to pins
+- 7 output bits/registers mapped to pins
+- 1 error bit mapped to a pin
 - X bit data stack (let's see how big it can be made?)
 - X nibble code memory
 - 1 8-bit timer/counter with clock divisor
@@ -14,22 +22,24 @@
 * Opcodes
 
 #+BEGIN_SRC
-PUSH reg              1000 RRRR
-POP  reg              1001 RRRR
-SET  reg              1010 RRRR
-RESET reg             1011 RRRR
+PUSH reg              0000 RRRR
+POP  reg              0001 RRRR
+SET  reg              0010 RRRR
+RESET reg             0011 RRRR
 
-SETUP reg             1100 RRRR IPFF I=input/output P=pullup F=Filter
-SETUP CLOCK           1101 DDDD DDDD D=clock divisor
-SETUP TIMER period    1110 PPPP PPPP P=period
+SETUP reg             0100 RRRR IPFF I=input/output P=pullup F=Filter
+SETUP CLOCK           0101 DDDD DDDD D=clock divisor
+SETUP TIMER period    0110 PPPP PPPP P=period
 
-SET TIMER reg mode    1111 RRRR 1MXX M=cycle/one-shot
-RESET TIMER           1111 XXXX 0XXX
+SET TIMER reg mode    0111 RRRR 1MXX M=cycle/one-shot
+RESET TIMER           0111 XXXX 0XXX
 
-NOT                   0000
-AND                   0001
-OR                    0010
-XOR                   0011
+NOT                   1000
+AND                   1001
+OR                    1010
+XOR                   1011
+
+NOP                   1111
 #+END_SRC
 
 ** Filter

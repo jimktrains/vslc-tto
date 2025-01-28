@@ -2,7 +2,13 @@ VSLP - Very Small Logic Processor
 ===========================================
 
 A place for me to learn about ASIC design. Runs a stripped down version of
-the [VSCL](https://github.com/jimktrains/vscl).
+the [VSCL](https://github.com/jimktrains/vscl)(Very Small Control Lanaguage)
+I'm working on for my microcontroller projects.
+
+The [architecture](./architecture.org) file has more details on what I plan
+to implement.
+
+---------------
 
 # Tiny Tapeout Verilog Project Template
 
