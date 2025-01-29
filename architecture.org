@@ -14,7 +14,7 @@
 - 1 error bit mapped to a pin
 - X bit data stack (let's see how big it can be made?)
 - X nibble code memory
-- 1 8-bit timer/counter with clock divisor
+- 1 16-bit timer/counter with clock divisor
 - 1 main clock divisor (to take the system/instruction clock to a cycle clock)
 
 * Opcodes
@@ -25,12 +25,13 @@ POP  reg              0001 RRRR
 SET  reg              0010 RRRR
 RESET reg             0011 RRRR
 
-SETUP reg             0100 RRRR IPFF I=input/output P=pullup F=Filter
-SETUP CLOCK           0101 DDDD DDDD D=clock divisor
-SETUP TIMER period    0110 PPPP PPPP P=period
+SETUP reg i p f d     0100 0000 RRRR IPFF DDDD I=input/output P=pullup F=Filter D=debounce count
+SETUP CLOCK           0100 0001 DDDD DDDD DDDD DDDD D=clock divisor
+SETUP TIMER P period  0100 0010 PPPP PPPP PPPP PPPP P=period
+SETUP TIMER M mode    0100 0011 MXXX M=cycle/one-shot
 
-SET TIMER reg mode    0111 RRRR 1MXX M=cycle/one-shot
-RESET TIMER           0111 XXXX 0XXX
+SET TIMER reg mode    0110 RRRR
+RESET TIMER           0111
 
 NOT                   1000
 AND                   1001

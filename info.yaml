@@ -1,14 +1,14 @@
 # Tiny Tapeout project information
 project:
-  title:        ""      # Project title
-  author:       ""      # Your name
-  discord:      ""      # Your discord username, for communication and automatically assigning you a Tapeout role (optional)
-  description:  ""      # One line description of what your project does
+  title:        "vslc"  # Project title
+  author:       "James Keener"      # Your name
+  discord:      "jimktrains"      # Your discord username, for communication and automatically assigning you a Tapeout role (optional)
+  description:  "A small PLC-like controller"      # One line description of what your project does
   language:     "Verilog" # other examples include SystemVerilog, Amaranth, VHDL, etc
   clock_hz:     0       # Clock frequency in Hz (or 0 if not applicable)
 
   # How many tiles your design occupies? A single tile is about 167x108 uM.
-  tiles: "1x1"          # Valid values: 1x1, 1x2, 2x2, 3x2, 4x2, 6x2 or 8x2
+  tiles: "4x2"          # Valid values: 1x1, 1x2, 2x2, 3x2, 4x2, 6x2 or 8x2
 
   # Your top module name must start with "tt_um_". Make it unique by including your github username:
   top_module:  "tt_um_example"
@@ -22,34 +22,34 @@ project:
 # The pinout of your project. Leave unused pins blank. DO NOT delete or add any pins.
 pinout:
   # Inputs
-  ui[0]: ""
-  ui[1]: ""
-  ui[2]: ""
-  ui[3]: ""
-  ui[4]: ""
-  ui[5]: ""
-  ui[6]: ""
-  ui[7]: ""
+  ui[0]: "Input or Code[0]"
+  ui[1]: "Input or Code[1]"
+  ui[2]: "Input or Code[2]"
+  ui[3]: "Input or Code[3]"
+  ui[4]: "Input"
+  ui[5]: "Input"
+  ui[6]: "Input"
+  ui[7]: "Input"
 
   # Outputs
-  uo[0]: ""
-  uo[1]: ""
-  uo[2]: ""
-  uo[3]: ""
-  uo[4]: ""
-  uo[5]: ""
-  uo[6]: ""
-  uo[7]: ""
+  uo[0]: "Output"
+  uo[1]: "Output"
+  uo[2]: "Output"
+  uo[3]: "Output"
+  uo[4]: "Output"
+  uo[5]: "Output"
+  uo[6]: "Output"
+  uo[7]: "Output"
 
   # Bidirectional pins
-  uio[0]: ""
-  uio[1]: ""
-  uio[2]: ""
-  uio[3]: ""
-  uio[4]: ""
-  uio[5]: ""
-  uio[6]: ""
-  uio[7]: ""
+  uio[0]: "Input/Output"
+  uio[1]: "Input/Output"
+  uio[2]: "Input/Output"
+  uio[3]: "Input/Output"
+  uio[4]: "Input/Output"
+  uio[5]: "Input/Output"
+  uio[6]: "Input/Output"
+  uio[7]: "Input/Output"
 
 # Do not change!
 yaml_version: 6

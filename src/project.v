@@ -6,7 +6,7 @@
 `default_nettype none
 
 module tt_um_example (
-    
+
     input  wire [7:0] ui_in,   // Dedicated inputs
     output wire [7:0] uo_out,   // Dedicated outputs
     input  wire [7:0] uio_in,   // IOs: Input path
@@ -46,8 +46,8 @@ module tt_um_example (
     end
   endtask
 
-  reg [7:0]code_addr = 0;
-  reg [3:0]codemem[0:255];
+  reg [5:0]code_addr = 0;
+  reg [3:0]codemem[0:32];
 
   // List all unused inputs to prevent warnings
   wire _unused = ena;
@@ -145,7 +145,7 @@ module tt_um_example (
         end
       end
       // If we are at the end of the code, then start a new cycle.
-      if(code_addr == 255) stack <= 0;
+      if(code_addr == 31) stack <= 0;
       code_addr <= code_addr + 1;
     end
   end
