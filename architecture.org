@@ -4,12 +4,10 @@
 - 1 bit databus
 - stack machine
   - stack is cleared on cycle start
-  - the reset vector is at 0x02
-  - memory 0x00 and 0x01 are the cycle start vector
   - code executes until a cycle start happens or the end of code memory is
-    reached, _i.e._ no wrapping.
-- 3 bit interface to load code (SCK, COPI, ~PS)
-- 7 input bits/registers mapped to pins
+    reached, in which case a new cycle is started
+- When in reset, you can shift data into the code memory
+- 8 input bits/registers mapped to pins
 - 1 io bits/registers not mapped to a pin
 - 8 io bits/registers mapped to pins
 - 7 output bits/registers mapped to pins
@@ -38,6 +36,9 @@ NOT                   1000
 AND                   1001
 OR                    1010
 XOR                   1011
+IMPL                  1100
+BIMP                  1101
+NAND                  1110 May change this, but not a bad placeholder
 
 NOP                   1111
 #+END_SRC
