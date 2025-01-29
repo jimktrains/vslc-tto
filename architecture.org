@@ -8,30 +8,23 @@
     reached, in which case a new cycle is started
 - When in reset, you can shift data into the code memory
 - 8 input bits/registers mapped to pins
-- 1 io bits/registers not mapped to a pin
 - 8 io bits/registers mapped to pins
-- 7 output bits/registers mapped to pins
-- 1 error bit mapped to a pin
-- X bit data stack (let's see how big it can be made?)
-- X nibble code memory
-- 1 16-bit timer/counter with clock divisor
-- 1 main clock divisor (to take the system/instruction clock to a cycle clock)
+- 8 output bits/registers mapped to pins
+- 1 error bit mapped to a pin (Not implemented yet)
+- X bit data stack (let's see how big it can be made?) (32bits, currently)
+- X nibble code memory (32 nibbles, currently)
+- 1 16-bit timer/counter with clock divisor (not implemented yet)
+- 1 main clock divisor (to take the system/instruction clock to a cycle
+  clock) (not implemented yet)
 
 * Opcodes
+  ** Implemented
 
 #+BEGIN_SRC
 PUSH reg              0000 RRRR
 POP  reg              0001 RRRR
 SET  reg              0010 RRRR
 RESET reg             0011 RRRR
-
-SETUP reg i p f d     0100 0000 RRRR IPFF DDDD I=input/output P=pullup F=Filter D=debounce count
-SETUP CLOCK           0100 0001 DDDD DDDD DDDD DDDD D=clock divisor
-SETUP TIMER P period  0100 0010 PPPP PPPP PPPP PPPP P=period
-SETUP TIMER M mode    0100 0011 MXXX M=cycle/one-shot
-
-SET TIMER reg mode    0110 RRRR
-RESET TIMER           0111
 
 NOT                   1000
 AND                   1001
@@ -44,7 +37,19 @@ NAND                  1110 May change this, but not a bad placeholder
 NOP                   1111
 #+END_SRC
 
-** Filter
+** Not Implemented yet
+#+BEGIN_SRC
+SETUP reg i p f d     0100 0000 RRRR IPFF DDDD I=input/output P=pullup F=Filter D=debounce count
+SETUP CLOCK           0100 0001 DDDD DDDD DDDD DDDD D=clock divisor
+SETUP TIMER P period  0100 0010 PPPP PPPP PPPP PPPP P=period
+SETUP TIMER M mode    0100 0011 MXXX M=cycle/one-shot
+
+SET TIMER reg mode    0110 RRRR
+RESET TIMER           0111
+#+END_SRC
+
+
+** Filters
   - 0 None
   - 1 Rising
   - 2 Faling
