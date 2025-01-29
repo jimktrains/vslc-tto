@@ -40,9 +40,14 @@ NOP                   1111
 ** Not Implemented yet
 #+BEGIN_SRC
 SETUP reg i p f d     0100 0000 RRRR IPFF DDDD I=input/output P=pullup F=Filter D=debounce count
-SETUP CLOCK           0100 0001 DDDD DDDD DDDD DDDD D=clock divisor
-SETUP TIMER P period  0100 0010 PPPP PPPP PPPP PPPP P=period
-SETUP TIMER M mode    0100 0011 MXXX M=cycle/one-shot
+SETUP CLOCK           0100 0001 DDDD D=log2(clock divisor)
+SETUP TIMER PA period 0100 0010 PPPP PPPP PPPP PPPP P=period
+SETUP TIMER PB period 0100 0011 PPPP PPPP PPPP PPPP P=period
+SETUP TIMER M mode    0100 0100 MXXX M=cycle/one-shot
+
+STACK DUP             0101 0000
+STACK SWAP            0101 0001
+STACK ROL             0101 0010
 
 SET TIMER reg mode    0110 RRRR
 RESET TIMER           0111

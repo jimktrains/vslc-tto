@@ -26,23 +26,26 @@ module tt_um_jimktrains_vslc (
   reg [7:0] uio_oe_reg = 0;
   assign uio_oe = uio_oe_reg;
 
-  task get_input;
+  function get_input;
     input [3:0] id;
     begin
-      if(id > 7) begin
-        uio_oe_reg[id[2:0]] <= 0;
-        stack[0] <= uio_in[id[2:0]];
-      end else stack[0] <= ui_in[id[2:0]];
+      if(id > 7) get_input = uio_in[id[2:0]];
+      else get_input = ui_in[id[2:0]];
     end
-  endtask
+  endfunction
   task set_output;
     input [3:0] id;
     input val;
     begin
-      if(id > 7) begin
-        uio_oe_reg[id[2:0]] <= 1;
-        uio_out_reg[id[2:0]] <= val;
-      end else uo_out_reg[id[2:0]] <= val;
+      if(id > 7) uio_out_reg[id[2:0]] <= val;
+      else uo_out_reg[id[2:0]] <= val;
+    end
+  endtask
+  task toggle_output;
+    input [3:0] id;
+    begin
+      if(id > 7) uio_out_reg[id[2:0]] <= ~uio_out_reg[id[2:0]];
+      else uo_out_reg[id[2:0]] <= ~uo_out_reg[id[2:0]];
     end
   endtask
 
@@ -55,6 +58,16 @@ module tt_um_jimktrains_vslc (
   reg [1:0]state = 0;
   reg [3:0]instr = 0;
   reg [31:0]stack = 0;
+
+  reg [3:0] timer_clock_divisor = 1;
+  reg [15:0] timer_clock = 0;
+  reg [15:0] timer_counter = 0;
+  reg [15:0] timer_period_a = 1;
+  reg [15:0] timer_period_b = 2;
+  reg [3:0] timer_ouput = 15;
+  reg timer_phase = 0;
+  reg timer_mode = 0;
+  reg timer_enabled = 1;
 
   localparam INSTR_PUSH = 0;
   localparam INSTR_POP = 1;
@@ -74,6 +87,9 @@ module tt_um_jimktrains_vslc (
   localparam INSTR_BIMP = 13;
   localparam INSTR_NAND = 14;
   localparam INSTR_NOP = 15;
+
+  localparam TIMER_MODE_CYCLE = 0;
+  localparam TIMER_MODE_ONESHOT = 1;
 
   reg in_reset=0;
   always @(posedge clk) begin
@@ -96,6 +112,45 @@ module tt_um_jimktrains_vslc (
       stack <= 0;
       state <=0;
     end else begin
+      if(timer_enabled == 1) begin
+        uio_oe_reg[timer_ouput[2:0]] <= 1;
+        // The right-shift feels like a huge hack due to me not fully
+        // groking the clocking semantics.
+        if(timer_clock < ((16'd1 << timer_clock_divisor) >> 1)) begin
+          timer_clock <= timer_clock + 1;
+        end
+        else begin
+          timer_clock <= 0;
+          timer_counter <= timer_counter + 1;
+          if(timer_phase == 0) begin
+            if(timer_period_a == 0) begin
+              timer_enabled <= 0;
+              timer_counter <= 0;
+              toggle_output(timer_ouput);
+            // The minus 1 feels like a huge hack due to me not fully
+            // groking the clocking semantics.
+            end else if(timer_counter >= (timer_period_a - 1)) begin
+              timer_phase <= 1;
+              timer_counter <= 0;
+              toggle_output(timer_ouput);
+            end
+          end
+          else if(timer_phase == 1) begin
+            if(timer_period_b == 0) begin
+              timer_phase <= 0;
+              timer_counter <= 0;
+              if(timer_mode == TIMER_MODE_ONESHOT) timer_enabled <= 0;
+            // The minus 1 feels like a huge hack due to me not fully
+            // groking the clocking semantics.
+            end else if(timer_counter >= (timer_period_b - 1)) begin
+              timer_phase <= 0;
+              timer_counter <= 0;
+              if(timer_mode == TIMER_MODE_ONESHOT) timer_enabled <= 0;
+              toggle_output(timer_ouput);
+            end
+          end
+        end
+      end
       if(state == 0) begin
         set_output(12, ~uio_out[0]);
         set_output(8, codemem[code_addr][0]);
@@ -130,7 +185,7 @@ module tt_um_jimktrains_vslc (
           if (codemem[code_addr] < 8) begin
             if(instr == INSTR_PUSH) begin
               stack <= stack << 1;
-              get_input(codemem[code_addr]);
+              stack[0] <= get_input(codemem[code_addr]);
             end else if(instr == INSTR_POP) begin
               set_output(codemem[code_addr], stack[0]);
               stack <= stack >> 1;
