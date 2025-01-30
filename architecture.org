@@ -8,7 +8,6 @@
     reached, in which case a new cycle is started
 - When in reset, you can shift data into the code memory
 - 8 input bits/registers mapped to pins
-- 8 io bits/registers mapped to pins
 - 8 output bits/registers mapped to pins
 - 1 error bit mapped to a pin (Not implemented yet)
 - X bit data stack (let's see how big it can be made?) (32bits, currently)
@@ -39,24 +38,56 @@ NOP                   1111
 
 ** Not Implemented yet
 #+BEGIN_SRC
-SETUP reg i p f d     0100 0000 RRRR IPFF DDDD I=input/output P=pullup F=Filter D=debounce count
-SETUP CLOCK           0100 0001 DDDD D=log2(clock divisor)
-SETUP TIMER PA period 0100 0010 PPPP PPPP PPPP PPPP P=period
-SETUP TIMER PB period 0100 0011 PPPP PPPP PPPP PPPP P=period
-SETUP TIMER M mode    0100 0100 MXXX M=cycle/one-shot
+PUSH reg              0000 RRRR
+POP  reg              0001 1RRR
+SET  reg              0010 1RRR
+RESET reg             0011 1RRR
+POP TIMER             0001 0XXX
+SET TIMER             0010 0XXX
+RESET TIMER           0011 0XXX
 
-STACK DUP             0101 0000
-STACK SWAP            0101 0001
-STACK ROL             0101 0010
+STACK SWAP            0011 1001
+STACK ROL             0011 1011
 
-SET TIMER reg mode    0110 RRRR
-RESET TIMER           0111
+p            0011
+q            0101
+
+           shift once
+          shift twice
+dup     1000 0011
+over    1000 0101
+drop    1010 0101
+
+zero    1000 0000
+one     1000 1111
+
+not     1001 1100
+overnot 1010 1010
+
+and     1010 0001
+nand    1010 1110
+or      1010 0111
+nor     1010 1000
+xor     1010 0110
+bicond  1010 1001
+impl    1010 1101
+nimpl   1010 0010
+conv    1010 1011
+nconv   1010 0100
+
+rising  1111 0001
+falling 1111 0010
+
+NOP     1111 1111
+
+SETUP TIMER PA period 0111 0000 PPPP PPPP PPPP PPPP P=period
+SETUP TIMER PB period 0111 0001 PPPP PPPP PPPP PPPP P=period
+SETUP TIMER M mode    0100 000M M=cycle/one-shot
+SETUP TIMER CLOCKDIV  0101 DDDD D=log2(clock divisor)
+
+
 #+END_SRC
 
+* Instruction Cycle
 
-** Filters
-  - 0 None
-  - 1 Rising
-  - 2 Faling
-  - 3 Change
-
+  -

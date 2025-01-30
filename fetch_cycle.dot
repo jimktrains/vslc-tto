@@ -1,0 +1,38 @@
+digraph vslc_fetch_cycle{
+  init -> set_address_zero;
+  init -> cs_eeprom_high;
+  cs_eeprom_high -> cs_eeprom;
+  cs_eeprom -> enable_eeprom_clk;
+  cs_eeprom -> send_read_cmd;
+  send_read_cmd -> send_read_cmd [label="count \in [7,1]"];
+  send_read_cmd -> send_address [label="count=0"]
+  send_address -> send_address [label="count \in [7,1]"];
+  send_address -> read_reset_vector [label="count=0 & addr=0"];
+  send_address -> read_prog_last_addr [label="count=0 & addr=1"];
+  send_address -> read_instr [label="addr>1"];
+  read_reset_vector -> read_reset_vector [label="count \in [7,1]"];
+  read_reset_vector -> read_prog_last_addr [label="count=0"];
+  read_prog_last_addr -> read_prog_last_addr [label="count \in [7,1]"];
+  read_prog_last_addr -> read_instr [label="count=0"];
+  read_instr -> read_instr [label="count \in [7,1]"];
+  read_instr -> execute_instr [label="count=0"];
+  execute_instr -> read_instr [label="addr < last_addr"];
+  execute_instr -> set_addr_as_reset_vect [label="addr=last_addr"];
+  execute_instr -> cycle_cs_eeprom [label="addr=last_addr"];
+
+  execute_instr -> read_period_a_byte2of3 [label="instr=01110000"];
+  read_period_a_byte2of3 -> read_period_a_byte2of3 [label="count \in [7,1]"];
+  read_period_a_byte2of3 -> place_in_period_a_high [label="count=0"];
+  read_period_a_byte2of3 -> read_period_a_byte3of3 [label="count=0"];
+  read_period_a_byte3of3 -> read_period_a_byte3of3 [label="count \in [7,1]"];
+  read_period_a_byte3of3 -> place_in_period_a_low [label="count=0"];
+  read_period_a_byte3of3 -> cycle_cs_eeprom [label="count=0"];
+
+  execute_instr -> read_period_b_byte2of3 [label="instr=01110001"];
+  read_period_b_byte2of3 -> read_period_b_byte2of3 [label="count \in [7,1]"];
+  read_period_b_byte2of3 -> place_in_period_b_high [label="count=0"];
+  read_period_b_byte2of3 -> read_period_b_byte3of3 [label="count=0"];
+  read_period_b_byte3of3 -> read_period_b_byte3of3 [label="count \in [7,1]"];
+  read_period_b_byte3of3 -> place_in_period_b_low [label="count=0"];
+  read_period_b_byte3of3 -> cycle_cs_eeprom [label="count=0"];
+}
