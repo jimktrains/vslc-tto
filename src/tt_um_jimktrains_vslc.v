@@ -77,10 +77,10 @@ module tt_um_jimktrains_vslc (
   localparam INSTR_SETUP_CLOCKDIV_74 = 4'h4;
   localparam INSTR_SETUP_MODE_74 = 4'h5;
 
-  localparam logic [3:0]INSTR_STACK_PUSH_73 = 4'b0000;
-  localparam logic [3:0]INSTR_STACK_POP_73 = 4'b0001;
-  localparam logic [3:0]INSTR_STACK_SET_73 = 4'b0010;
-  localparam logic [3:0]INSTR_STACK_RESET_73 = 4'b0011;
+  localparam [3:0]INSTR_STACK_PUSH_73 = 4'b0000;
+  localparam [3:0]INSTR_STACK_POP_73 = 4'b0001;
+  localparam [3:0]INSTR_STACK_SET_73 = 4'b0010;
+  localparam [3:0]INSTR_STACK_RESET_73 = 4'b0011;
 
 
   localparam INSTR_MSB = 7;
@@ -89,17 +89,14 @@ module tt_um_jimktrains_vslc (
   reg [7:0]cycle_end_addr = 8'b0;
   reg [7:0]instr = 8'b0;
   wire [1:0]instr_class;
-  logic [2:0]regid;
-  logic [3:0]instr_clock_div;
-  logic instr_timer_mode_bit;
+  wire [2:0]regid;
+  wire [3:0]instr_clock_div;
+  wire instr_timer_mode_bit;
 
 
   localparam STACK_MSB = 15;
   reg [STACK_MSB:0]stack = 0;
-  logic [1:0]logic_instr_param;
-  logic [3:0]logic_instr_table;
-  logic logic_instr_result;
-  logic stack_out; assign stack_out = uio_out_reg[STACK_OUT];
+  wire stack_out; assign stack_out = uio_out_reg[STACK_OUT];
 
   reg [15:0] timer_clock_counter = 16'b0;
   reg [3:0] timer_clock_divisor = 4'b0;
@@ -111,27 +108,23 @@ module tt_um_jimktrains_vslc (
   reg timer_mode = 1'b0;
 
   assign uo_out[7:0] = uo_out_reg[7:0];
-  assign uio_out[TIMER_OUTPUT] = timer_enabled && uio_out_reg[TIMER_OUTPUT];
-  assign uio_out[6:2] = uio_out_reg[6:2];
+  assign uio_out[7:2] = uio_out_reg[7:2];
   assign uio_out[EEPROM_CS] = uio_out_reg[EEPROM_CS];
   assign uio_out[0] = clk & !uio_out_reg[EEPROM_CS];
   assign uio_oe[7:0] = uio_oe_reg[7:0];
-  logic eeprom_cs; assign eeprom_cs = uio_out[EEPROM_CS];
-  logic eeprom_sck; assign eeprom_sck = uio_out[EEPROM_SCK];
-  logic eeprom_copi; assign eeprom_copi = uio_out[EEPROM_COPI];
 
-  logic eeprom_oe_cs; assign eeprom_oe_cs = uio_oe_reg[EEPROM_CS];
-  logic eeprom_oe_sck; assign eeprom_oe_sck = uio_oe_reg[EEPROM_SCK];
-  logic eeprom_oe_copi; assign eeprom_oe_copi = uio_oe_reg[EEPROM_COPI];
-  logic timer_out; assign timer_out = uio_out[TIMER_OUTPUT];
+  // Giving these names just makes it easier to find in the vcd.
+  wire eeprom_cs; assign eeprom_cs = uio_out[EEPROM_CS];
+  wire eeprom_sck; assign eeprom_sck = uio_out[EEPROM_SCK];
+  wire eeprom_copi; assign eeprom_copi = uio_out[EEPROM_COPI];
+  wire eeprom_oe_cs; assign eeprom_oe_cs = uio_oe_reg[EEPROM_CS];
+  wire eeprom_oe_sck; assign eeprom_oe_sck = uio_oe_reg[EEPROM_SCK];
+  wire eeprom_oe_copi; assign eeprom_oe_copi = uio_oe_reg[EEPROM_COPI];
+  wire timer_out; assign timer_out = uio_out[TIMER_OUTPUT];
 
   assign instr_class[1:0] = instr[INSTR_MSB -: 2];
   assign instr_clock_div = instr[3:0];
   assign instr_timer_mode_bit = instr[0];
-
-  assign logic_instr_param = stack[1:0];
-  assign logic_instr_table = instr[INSTR_MSB-4 -: 4];
-  assign logic_instr_result = logic_instr_table[logic_instr_param];
 
   assign regid = instr[INSTR_MSB-5 -:3];
 
@@ -146,23 +139,24 @@ module tt_um_jimktrains_vslc (
           if (timer_phase == 1'b0 && timer_counter == timer_period_a) begin
             timer_counter <= 16'b0;
             timer_phase <= 1'b1;
+            timer_enabled <= timer_enabled;
             uio_out_reg[TIMER_OUTPUT] <= ~uio_out_reg[TIMER_OUTPUT];
           end else if (timer_phase == 1'b1 && timer_counter == timer_period_b) begin
             timer_counter <= 16'b0;
             timer_phase <= 1'b0;
             uio_out_reg[TIMER_OUTPUT] <= timer_period_b == 0 ? uio_out_reg[TIMER_OUTPUT] : ~uio_out_reg[TIMER_OUTPUT];
-            timer_enabled <= timer_mode == 1'b1 ? 1'b0 : timer_enabled;
+            if (timer_mode == TIMER_MODE_ONESHOT) timer_reset();
           end else begin
+            timer_phase <= timer_phase;
+            timer_enabled <= timer_enabled;
+            uio_out_reg[TIMER_OUTPUT] <= uio_out_reg[TIMER_OUTPUT];
             timer_counter <= timer_counter + 1;
           end
         end else begin
           timer_clock_counter <= timer_clock_counter + 1;
         end
       end else begin
-        timer_clock_counter <= timer_clock_counter;
-        timer_counter <= timer_counter;
-        timer_phase <= timer_phase;
-        uio_out_reg[TIMER_OUTPUT] <= uio_out_reg[TIMER_OUTPUT];
+        timer_reset();
       end
     end
   endtask
@@ -176,6 +170,7 @@ module tt_um_jimktrains_vslc (
       timer_period_b <= 16'h2;
       timer_enabled <= 1'b0;
       timer_phase <= 1'b0;
+      uio_out_reg[TIMER_OUTPUT] <= 1'b0;
     end
   endtask
 
@@ -359,13 +354,13 @@ module tt_um_jimktrains_vslc (
       fetch_cycle_update();
       fetch_readwrite();
       fetch_cycle_execute();
+      write_stack();
     end
   end
 
   always @(posedge clk) begin
     ui_in_reg <= ui_in;
     uio_in_reg <= uio_in;
-    write_stack();
   end
 
 endmodule
