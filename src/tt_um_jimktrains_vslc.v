@@ -31,18 +31,16 @@ module tt_um_jimktrains_vslc (
   localparam EEPROM_CIPO = 3;
   localparam STACK_OUT = 6;
 
-  reg [3:0] fetch_prev_state = 0;
-  reg [3:0] fetch_state = 0;
-  reg [2:0] fetch_count = 0;
-  reg [7:0] cur_addr = 0;
-  reg write_buf = 0;
-  reg write_waiting = 0;
+  reg [3:0] fetch_prev_state = 4'b0;
+  reg [3:0] fetch_state = 4'b0;
+  reg [2:0] fetch_count = 3'b0;
+  reg [7:0] cur_addr = 8'b0;
 
-  reg [7:0] uo_out_reg = 0;
-  reg [7:0] uio_oe_reg = 0;
-  reg [7:0] uio_out_reg = 0;
-  reg [7:0] uio_in_reg = 0;
-  reg [7:0] ui_in_reg = 0;
+  reg [7:0] uo_out_reg = 8'b0;
+  reg [7:0] uio_oe_reg = 8'b0;
+  reg [7:0] uio_out_reg = 8'b0;
+  reg [7:0] uio_in_reg = 8'b0;
+  reg [7:0] ui_in_reg = 8'b0;
 
 
   // List all unused inputs to prevent warnings
@@ -95,7 +93,7 @@ module tt_um_jimktrains_vslc (
 
 
   localparam STACK_MSB = 15;
-  reg [STACK_MSB:0]stack = 0;
+  reg [STACK_MSB:0]stack = 16'b0;
   wire stack_out; assign stack_out = uio_out_reg[STACK_OUT];
 
   reg [15:0] timer_clock_counter = 16'b0;
@@ -294,16 +292,15 @@ module tt_um_jimktrains_vslc (
 
   task fetch_read_bit();
     begin
-      uio_out_reg[EEPROM_CS] <= 1'b0;
       instr[INSTR_MSB:1] <= instr[INSTR_MSB-1:0];
       instr[0] <= uio_in_reg[EEPROM_CIPO];
       fetch_count <= fetch_count - 1;
-      cur_addr <= cur_addr + 1;
+      cur_addr <= fetch_count == 0 ? cur_addr + 1 : cur_addr;
     end
   endtask
+
   task fetch_write_bit(input [7:0]towrite);
     begin
-      uio_out_reg[EEPROM_CS] <= 1'b0;
       uio_out_reg[EEPROM_COPI] <= towrite[fetch_count];
       fetch_count <= fetch_count - 1;
     end
@@ -344,12 +341,8 @@ module tt_um_jimktrains_vslc (
       cycle_start_addr <= 8'b0;
       cycle_end_addr <= 8'b0;
       stack <= 16'b0;
-      write_waiting <= 0;
-      write_buf <= 0;
       timer_reset();
     end else begin
-      if (write_waiting) uio_out_reg[EEPROM_COPI] <= write_buf;
-
       timer_update();
       fetch_cycle_update();
       fetch_readwrite();
