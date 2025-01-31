@@ -22,10 +22,10 @@ project:
 # The pinout of your project. Leave unused pins blank. DO NOT delete or add any pins.
 pinout:
   # Inputs
-  ui[0]: "Input or Code[0]"
-  ui[1]: "Input or Code[1]"
-  ui[2]: "Input or Code[2]"
-  ui[3]: "Input or Code[3]"
+  ui[0]: "Input"
+  ui[1]: "Input"
+  ui[2]: "Input"
+  ui[3]: "Input"
   ui[4]: "Input"
   ui[5]: "Input"
   ui[6]: "Input"
@@ -42,14 +42,14 @@ pinout:
   uo[7]: "Output"
 
   # Bidirectional pins
-  uio[0]: "Input/Output"
-  uio[1]: "Input/Output"
-  uio[2]: "Input/Output"
-  uio[3]: "Input/Output"
-  uio[4]: "Input/Output"
-  uio[5]: "Input/Output"
-  uio[6]: "Input/Output"
-  uio[7]: "Input/Output"
+  uio[0]: "SPI CLK"
+  uio[1]: "SPI CS (output)"
+  uio[2]: "COPI"
+  uio[3]: "CIPI"
+  uio[4]: ""
+  uio[5]: ""
+  uio[6]: "Stack Out"
+  uio[7]: "Timer Out"
 
 # Do not change!
 yaml_version: 6
