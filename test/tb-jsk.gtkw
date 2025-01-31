@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
-[*] Thu Jan 30 23:34:40 2025
+[*] Fri Jan 31 04:51:25 2025
 [*]
 [dumpfile] "/home/jim/projects/github.com/jimktrains/vslc-tto/test/tb.vcd"
-[dumpfile_mtime] "Thu Jan 30 23:31:05 2025"
-[dumpfile_size] 30355
+[dumpfile_mtime] "Fri Jan 31 04:47:52 2025"
+[dumpfile_size] 29824
 [savefile] "/home/jim/projects/github.com/jimktrains/vslc-tto/test/tb-jsk.gtkw"
 [timestart] 0
 [size] 1366 719
 [pos] -1 -1
-*-25.534533 680300000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-26.006857 755000000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb.
 [sst_width] 214
 [signals_width] 230
@@ -45,7 +45,6 @@ tb.user_project.timer_enabled
 tb.user_project.timer_out
 @22
 tb.user_project.timer_counter[15:0]
-tb.user_project.timer_clock_counter[15:0]
 @29
 tb.user_project.stack_out
 @28

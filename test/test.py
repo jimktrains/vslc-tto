@@ -37,8 +37,10 @@ async def read8(dut):
     r = 0x0
     for i in range(8):
         await ClockCycles(dut.clk, 1)
+        dut._log.info(f"{dut.uio_out.value=}")
         r += ((dut.uio_out.value >> EEPROM_COPI) & 0x01) << (7-i)
     return r
+
 async def write8(dut, v):
     for i in range(8):
         dut.uio_in.value = (dut.uio_in.value & (0xff - (1 << EEPROM_CIPO))) | (((v >> (7-i)) & 0x01) << EEPROM_CIPO)
