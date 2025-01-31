@@ -142,15 +142,19 @@ module tt_um_jimktrains_vslc (
           end else if (timer_phase == 1'b1 && timer_counter == timer_period_b) begin
             timer_counter <= 16'b0;
             timer_phase <= 1'b0;
+            timer_enabled <= timer_mode == TIMER_MODE_CYCLE;
             uio_out_reg[TIMER_OUTPUT] <= timer_period_b == 0 ? uio_out_reg[TIMER_OUTPUT] : ~uio_out_reg[TIMER_OUTPUT];
-            if (timer_mode == TIMER_MODE_ONESHOT) timer_reset();
           end else begin
+            timer_counter <= timer_counter + 1;
             timer_phase <= timer_phase;
             timer_enabled <= timer_enabled;
             uio_out_reg[TIMER_OUTPUT] <= uio_out_reg[TIMER_OUTPUT];
-            timer_counter <= timer_counter + 1;
           end
         end else begin
+          timer_phase <= timer_phase;
+          timer_enabled <= timer_enabled;
+          timer_counter <= timer_counter;
+          uio_out_reg[TIMER_OUTPUT] <= uio_out_reg[TIMER_OUTPUT];
           timer_clock_counter <= timer_clock_counter + 1;
         end
       end else begin
@@ -168,6 +172,7 @@ module tt_um_jimktrains_vslc (
       timer_period_b <= 16'h2;
       timer_enabled <= 1'b0;
       timer_phase <= 1'b0;
+      timer_mode <= 1'b0;
       uio_out_reg[TIMER_OUTPUT] <= 1'b0;
     end
   endtask
@@ -349,7 +354,9 @@ module tt_um_jimktrains_vslc (
       cycle_end_addr <= 8'b0;
       stack <= 16'b0;
       timer_reset();
+      cur_addr <= 8'b0;
     end else begin
+      if (!timer_enabled) timer_reset();
       timer_update();
       fetch_cycle_update();
       fetch_readwrite();
