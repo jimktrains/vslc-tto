@@ -31,16 +31,16 @@ module tt_um_jimktrains_vslc (
   localparam EEPROM_CIPO = 3;
   localparam STACK_OUT = 6;
 
-  reg [3:0] fetch_prev_state = 4'b0;
-  reg [3:0] fetch_state = 4'b0;
-  reg [2:0] fetch_count = 3'b0;
-  reg [7:0] cur_addr = 8'b0;
+  reg [3:0] fetch_prev_state;
+  reg [3:0] fetch_state;
+  reg [2:0] fetch_count;
+  reg [7:0] cur_addr;
 
-  reg [7:0] uo_out_reg = 8'b0;
-  reg [7:0] uio_oe_reg = 8'b0;
-  reg [7:0] uio_out_reg = 8'b0;
-  reg [7:0] uio_in_reg = 8'b0;
-  reg [7:0] ui_in_reg = 8'b0;
+  reg [7:0] uo_out_reg;
+  reg [7:0] uio_oe_reg;
+  reg [7:0] uio_out_reg;
+  reg [7:0] uio_in_reg;
+  reg [7:0] ui_in_reg;
 
 
   // List all unused inputs to prevent warnings
@@ -83,9 +83,9 @@ module tt_um_jimktrains_vslc (
 
   localparam INSTR_MSB = 7;
 
-  reg [7:0]cycle_start_addr = 8'b0;
-  reg [7:0]cycle_end_addr = 8'b0;
-  reg [7:0]instr = 8'b0;
+  reg [7:0]cycle_start_addr;
+  reg [7:0]cycle_end_addr;
+  reg [7:0]instr;
   wire [1:0]instr_class;
   wire [2:0]regid;
   wire [3:0]instr_clock_div;
@@ -96,14 +96,14 @@ module tt_um_jimktrains_vslc (
   reg [STACK_MSB:0]stack = 16'b0;
   wire stack_out; assign stack_out = uio_out_reg[STACK_OUT];
 
-  reg [15:0] timer_clock_counter = 16'b0;
-  reg [3:0] timer_clock_divisor = 4'b0;
-  reg [15:0] timer_counter = 16'b0;
-  reg [15:0] timer_period_a = 16'b0;
-  reg [15:0] timer_period_b = 16'b0;
-  reg timer_enabled = 1'b0;
-  reg timer_phase = 1'b0;
-  reg timer_mode = 1'b0;
+  reg [15:0] timer_clock_counter;
+  reg [3:0] timer_clock_divisor;
+  reg [15:0] timer_counter;
+  reg [15:0] timer_period_a;
+  reg [15:0] timer_period_b;
+  reg timer_enabled;
+  reg timer_phase;
+  reg timer_mode;
 
   assign uo_out[7:0] = uo_out_reg[7:0];
   assign uio_out[7:2] = uio_out_reg[7:2];
@@ -240,7 +240,7 @@ module tt_um_jimktrains_vslc (
           FETCH_STATE_READ_INSTR: begin
             case (instr_class)
               INSTR_CLASS_STACK: begin
-                casez (instr[7:4])
+                case (instr[7:4])
                   INSTR_STACK_PUSH_73: begin
                     stack[STACK_MSB:1] <= stack[STACK_MSB-1:0];
                     if (instr[3] == 1'b0) stack[0] <= ui_in_reg[regid];
