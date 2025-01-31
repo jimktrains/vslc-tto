@@ -234,9 +234,13 @@ module tt_um_jimktrains_vslc (
       // We want to do this right at the start of the next cycle as that's
       // we we have everything that was read.
       if (fetch_count == 3'h7) begin
+        cycle_start_addr <= cycle_start_addr;
         case (fetch_prev_state)
           FETCH_STATE_READ_RESET_VECTOR: cycle_start_addr <= instr;
           FETCH_STATE_READ_PROG_LAST_ADDR: cycle_end_addr <= instr;
+          default: cycle_start_addr <= cycle_start_addr;
+        endcase
+        case (fetch_prev_state)
           FETCH_STATE_READ_INSTR: begin
             case (instr_class)
               INSTR_CLASS_STACK: begin
@@ -286,6 +290,8 @@ module tt_um_jimktrains_vslc (
           FETCH_STATE_READ_PERIOD_B_BYTE3OF3: timer_period_b[7:0] <= instr;
           default: begin end
         endcase
+      end else begin
+        cycle_start_addr <= cycle_start_addr;
       end
   end
   endtask
@@ -333,6 +339,7 @@ module tt_um_jimktrains_vslc (
   always @(negedge clk) begin
     if (!rst_n) begin
       fetch_state <= FETCH_STATE_INIT;
+      fetch_prev_state <= FETCH_STATE_INIT;
       fetch_count <= 3'h7;
       uo_out_reg <= 8'b0;
       uio_oe_reg <= (1 << EEPROM_SCK) + (1 << EEPROM_CS) + (1 << EEPROM_COPI) + (1 << TIMER_OUTPUT) + (1 << STACK_OUT);
