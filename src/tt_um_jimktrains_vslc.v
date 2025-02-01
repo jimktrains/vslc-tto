@@ -51,8 +51,8 @@ module tt_um_jimktrains_vslc (
 
   localparam FETCH_STATE_INIT = 4'h0;
   localparam FETCH_STATE_CS_EEPROM_HIGH = 4'h1;
-  localparam FETCH_STATE_CYCLE_CS_EEPROM = 4'h2;
   localparam FETCH_STATE_CS_EEPROM = 4'h3;
+  localparam FETCH_STATE_READ_PROG_LAST_ADDR_2OF2 = 4'h4;
   localparam FETCH_STATE_READ_INSTR = 4'h5;
   localparam FETCH_STATE_READ_PERIOD_A_BYTE2OF3 = 4'h6;
   localparam FETCH_STATE_READ_PERIOD_A_BYTE3OF3 = 4'h7;
@@ -62,6 +62,8 @@ module tt_um_jimktrains_vslc (
   localparam FETCH_STATE_READ_RESET_VECTOR = 4'hB;
   localparam FETCH_STATE_SEND_ADDRESS = 4'hC;
   localparam FETCH_STATE_SEND_READ_CMD = 4'hD;
+  localparam FETCH_STATE_SEND_ADDRESS_2OF2 = 4'hE;
+  localparam FETCH_STATE_READ_RESET_VECTOR_2OF2 = 4'hF;
 
   localparam INSTR_PUSH_74     = 4'h0;
   localparam INSTR_POP_74      = 5'h1;
@@ -206,18 +208,21 @@ module tt_um_jimktrains_vslc (
             fetch_prev_state <= fetch_state;
             case (fetch_state)
               FETCH_STATE_SEND_READ_CMD: fetch_state <= FETCH_STATE_SEND_ADDRESS;
-              FETCH_STATE_SEND_ADDRESS: begin
+              FETCH_STATE_SEND_ADDRESS: fetch_state <= FETCH_STATE_SEND_ADDRESS_2OF2;
+              FETCH_STATE_SEND_ADDRESS_2OF2: begin
                 case (cycle_start_addr)
-                  // 8'h00: fetch_state <= FETCH_STATE_READ_RESET_VECTOR;
+                  16'h00: fetch_state <= FETCH_STATE_READ_RESET_VECTOR;
                   default: fetch_state <= FETCH_STATE_READ_INSTR;
                 endcase
               end
-              FETCH_STATE_READ_RESET_VECTOR: fetch_state <= FETCH_STATE_READ_PROG_LAST_ADDR;
-              FETCH_STATE_READ_PROG_LAST_ADDR: fetch_state <= FETCH_STATE_READ_INSTR;
+              FETCH_STATE_READ_RESET_VECTOR: fetch_state <= FETCH_STATE_READ_RESET_VECTOR_2OF2;
+              FETCH_STATE_READ_RESET_VECTOR_2OF2: fetch_state <= FETCH_STATE_READ_PROG_LAST_ADDR;
+              FETCH_STATE_READ_PROG_LAST_ADDR: fetch_state <= FETCH_STATE_READ_PROG_LAST_ADDR_2OF2;
+              FETCH_STATE_READ_PROG_LAST_ADDR_2OF2: fetch_state <= FETCH_STATE_READ_INSTR;
               FETCH_STATE_READ_INSTR: begin
-                // if (cur_addr > cycle_end_addr) fetch_state <= FETCH_STATE_CS_EEPROM_HIGH;
-                // else if (cur_addr == 0) fetch_state <= FETCH_STATE_CS_EEPROM_HIGH; // wrapped address
-                if (instr == INSTR_SETUP_PERIOD_A) fetch_state <= FETCH_STATE_READ_PERIOD_A_BYTE2OF3;
+                if (cur_addr > cycle_end_addr) fetch_state <= FETCH_STATE_CS_EEPROM_HIGH;
+                else if (cur_addr == 0) fetch_state <= FETCH_STATE_CS_EEPROM_HIGH; // wrapped address
+                else if (instr == INSTR_SETUP_PERIOD_A) fetch_state <= FETCH_STATE_READ_PERIOD_A_BYTE2OF3;
                 else if (instr == INSTR_SETUP_PERIOD_B) fetch_state <= FETCH_STATE_READ_PERIOD_B_BYTE2OF3;
                 else fetch_state <= FETCH_STATE_READ_INSTR;
               end
@@ -253,7 +258,9 @@ module tt_um_jimktrains_vslc (
           // I need to redo this to have it pull in 2 bytes if I continue
           // with this idea.
           FETCH_STATE_READ_RESET_VECTOR: cycle_start_addr[7:0] <= instr;
+          FETCH_STATE_READ_RESET_VECTOR_2OF2: cycle_start_addr[15:8] <= instr;
           FETCH_STATE_READ_PROG_LAST_ADDR: cycle_end_addr[7:0] <= instr;
+          FETCH_STATE_READ_PROG_LAST_ADDR_2OF2: cycle_end_addr[15:8] <= instr;
           default: cycle_start_addr <= cycle_start_addr;
         endcase
         case (fetch_prev_state)
@@ -375,9 +382,12 @@ module tt_um_jimktrains_vslc (
       case (fetch_state)
         FETCH_STATE_CS_EEPROM: fetch_write_bit(EEPROM_READ_COMMAND);
         FETCH_STATE_SEND_READ_CMD: fetch_write_bit(EEPROM_READ_COMMAND);
-        FETCH_STATE_SEND_ADDRESS: fetch_write_bit(cycle_start_addr[7:0]);
+        FETCH_STATE_SEND_ADDRESS_2OF2: fetch_write_bit(cycle_start_addr[7:0]);
+        FETCH_STATE_SEND_ADDRESS: fetch_write_bit(cycle_start_addr[15:8]);
         FETCH_STATE_READ_RESET_VECTOR: fetch_read_bit();
+        FETCH_STATE_READ_RESET_VECTOR_2OF2: fetch_read_bit();
         FETCH_STATE_READ_PROG_LAST_ADDR: fetch_read_bit();
+        FETCH_STATE_READ_PROG_LAST_ADDR_2OF2: fetch_read_bit();
         FETCH_STATE_READ_INSTR: fetch_read_bit();
         FETCH_STATE_READ_PERIOD_A_BYTE2OF3: fetch_read_bit();
         FETCH_STATE_READ_PERIOD_A_BYTE3OF3: fetch_read_bit();

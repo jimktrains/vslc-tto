@@ -203,8 +203,10 @@ push_false = (INSTR_PUSH(IO_I, 0), assert_tos_f)
 nop = (INSTR_NOP, None )
 
 MEMORY = [
-    # (0x05, None ),
-    # (0xff, None ),
+    (0x04, None ),
+    (0x00, None ),
+    (0xff, None ),
+    (0xff, None ),
 
     msg("Test Push"),
     push_true,
@@ -371,6 +373,7 @@ async def test_project(dut):
     dut._log.info(f"Reading READ Command")
     assert (await read8(dut)) == EEPROM_READ_COMMAND
     dut._log.info(f"Reading Address")
+    assert (await read8(dut)) == 0
     assert (await read8(dut)) == 0
     last_a = None
     adj_addr = 0
