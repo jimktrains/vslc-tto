@@ -42,13 +42,13 @@ pinout:
   uo[7]: "Output"
 
   # Bidirectional pins
-  uio[0]: "SPI CLK"
+  uio[0]: "Cycle Clock (input)"
   uio[1]: "SPI CS (output)"
   uio[2]: "COPI"
   uio[3]: "CIPI"
-  uio[4]: ""
-  uio[5]: ""
-  uio[6]: "Stack Out"
+  uio[4]: "Stack Out (even bits)(output)"
+  uio[5]: "Stack Out (odd bits)(output)"
+  uio[6]: "Top Of Stack (output)"
   uio[7]: "Timer Out"
 
 # Do not change!

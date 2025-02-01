@@ -166,9 +166,9 @@ CYCLE_START = 0;
 EEPROM_CS = 1;
 EEPROM_COPI = 2;
 EEPROM_CIPO = 3;
-NOS_OUPUT = 4;
-TOS_OUPUT = 5;
-STACK_OUTPUT = 6;
+STACK_OUTPUT2 = 4;
+STACK_OUTPUT = 5;
+TOS_OUPUT = 6;
 TIMER_OUTPUT = 7;
 
 
@@ -337,11 +337,11 @@ async def write8(dut, v):
         await ClockCycles(dut.clk, 1, rising=False)
         if i < 7 and i > 2:
             s1 = (((dut.uio_out.value[7-STACK_OUTPUT]) & 0x01) << (((7-i)-1)*2 + 1)) & 0xff
-            s2 = (((dut.uio_out.value[7-NOS_OUPUT]) & 0x01) << (((7-i)-1)*2)) & 0xff
+            s2 = (((dut.uio_out.value[7-STACK_OUTPUT2]) & 0x01) << (((7-i)-1)*2)) & 0xff
 
             rs += s1 + s2
     # rs += (((dut.uio_out.value[7-TOS_OUPUT]) & 0x01) << 0) & 0xff
-    # rs += (((dut.uio_out.value[7-NOS_OUPUT]) & 0x01) << 1) & 0xff
+    # rs += (((dut.uio_out.value[7-STACK_OUTPUT2]) & 0x01) << 1) & 0xff
     return rs
 
 @cocotb.test()

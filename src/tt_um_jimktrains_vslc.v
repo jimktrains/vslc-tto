@@ -30,8 +30,8 @@ module tt_um_jimktrains_vslc (
   localparam EEPROM_COPI = 2;
   localparam EEPROM_CIPO = 3;
   localparam STACK_OUT2 = 4;
-  localparam TOS_OUT = 5;
-  localparam STACK_OUT = 6;
+  localparam STACK_OUT = 5;
+  localparam TOS_OUT = 6;
   localparam TIMER_OUTPUT = 7;
 
   reg [3:0] fetch_prev_state;
