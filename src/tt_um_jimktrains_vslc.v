@@ -106,11 +106,11 @@ module tt_um_jimktrains_vslc (
   wire stack_out2; assign stack_out2 = uio_out_reg[STACK_OUT2];
   wire tos; assign tos = stack[0];
 
-  reg [15:0] timer_clock_counter;
   reg [3:0] timer_clock_divisor;
-  reg [15:0] timer_counter;
-  reg [15:0] timer_period_a;
-  reg [15:0] timer_period_b;
+  reg [9:0] timer_clock_counter;
+  reg [9:0] timer_counter;
+  reg [9:0] timer_period_a;
+  reg [9:0] timer_period_b;
   reg timer_enabled;
   reg timer_phase;
   reg timer_mode;
@@ -143,12 +143,12 @@ module tt_um_jimktrains_vslc (
         if (timer_clock_counter[timer_clock_divisor] == 1'b1) begin
           timer_clock_counter <= 0;
           if (timer_phase == 1'b0 && timer_counter == timer_period_a) begin
-            timer_counter <= 16'b0;
+            timer_counter <= 10'b0;
             timer_phase <= 1'b1;
             timer_enabled <= timer_enabled;
             uio_out_reg[TIMER_OUTPUT] <= ~uio_out_reg[TIMER_OUTPUT];
           end else if (timer_phase == 1'b1 && timer_counter == timer_period_b) begin
-            timer_counter <= 16'b0;
+            timer_counter <= 10'b0;
             timer_phase <= 1'b0;
             timer_enabled <= timer_mode == TIMER_MODE_CYCLE;
             uio_out_reg[TIMER_OUTPUT] <= timer_period_b == 0 ? uio_out_reg[TIMER_OUTPUT] : ~uio_out_reg[TIMER_OUTPUT];
@@ -173,11 +173,11 @@ module tt_um_jimktrains_vslc (
 
   task timer_reset();
     begin
-      timer_clock_counter <= 16'b0;
+      timer_clock_counter <= 10'b0;
       timer_clock_divisor <= 4'b0000;
-      timer_counter <= 16'b0;
-      timer_period_a <= 16'b1;
-      timer_period_b <= 16'h2;
+      timer_counter <= 10'b0;
+      timer_period_a <= 10'b1;
+      timer_period_b <= 10'h2;
       timer_enabled <= 1'b0;
       timer_phase <= 1'b0;
       timer_mode <= 1'b0;
@@ -341,9 +341,9 @@ module tt_um_jimktrains_vslc (
               end
             endcase
           end
-          FETCH_STATE_READ_PERIOD_A_BYTE2OF3: timer_period_a[15:8] <= instr;
+          FETCH_STATE_READ_PERIOD_A_BYTE2OF3: timer_period_a[9:8] <= instr[1:0];
           FETCH_STATE_READ_PERIOD_A_BYTE3OF3: timer_period_a[7:0] <= instr;
-          FETCH_STATE_READ_PERIOD_B_BYTE2OF3: timer_period_b[15:8] <= instr;
+          FETCH_STATE_READ_PERIOD_B_BYTE2OF3: timer_period_b[9:8] <= instr[1:0];
           FETCH_STATE_READ_PERIOD_B_BYTE3OF3: timer_period_b[7:0] <= instr;
           default: begin end
         endcase
