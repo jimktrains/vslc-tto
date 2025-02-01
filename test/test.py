@@ -433,3 +433,72 @@ async def test_project(dut):
                 assert tos == expected
 
         await ClockCycles(dut.clk, 1)
+
+@cocotb.test()
+async def test_addressing(dut):
+    dut._log.info("Start, the Second")
+
+    # Set the clock period to 10 us (100 KHz)
+    clock = Clock(dut.clk, 10, units="us")
+    cocotb.start_soon(clock.start())
+    await ClockCycles(dut.clk, 1)
+
+    MEMORY = [
+        0x00,
+        0x05,
+        0x00,
+        0x06,
+        INSTR_ZERO,
+        INSTR_POP(0),
+        INSTR_ONE,
+    ]
+
+    # Reset
+    dut._log.info(f"{len(MEMORY)=}")
+    dut._log.info("Reset")
+    dut.ena.value = 1
+    dut.ui_in.value = 2
+    dut.uio_in.value = 0
+    dut.rst_n.value = 0
+    await ClockCycles(dut.clk, 1)
+    await ClockCycles(dut.clk, 1)
+    dut.rst_n.value = 1
+    await ClockCycles(dut.clk, 1)
+
+    assert dut.uio_out.value[7-EEPROM_CS]
+    dut._log.info(f"Reset Done")
+    await ClockCycles(dut.clk, 1)
+    dut._log.info(f"Reading READ Command")
+    assert (await read8(dut)) == EEPROM_READ_COMMAND
+    dut._log.info(f"Reading Address")
+    assert (await read8(dut)) == 0
+    assert (await read8(dut)) == 0
+
+    await write8(dut, MEMORY[0])
+    await write8(dut, MEMORY[1])
+    await write8(dut, MEMORY[2])
+    await write8(dut, MEMORY[3])
+    await write8(dut, MEMORY[4])
+    await write8(dut, MEMORY[5])
+    await write8(dut, MEMORY[6])
+    dut._log.info(f"Got to the end of the program")
+    assert not dut.uo_out.value[7-0]
+    # write8 stops on a falling edge
+    # and we need a full clock cycle
+    # to get to the start of the next
+    # cycle.
+    await ClockCycles(dut.clk, 1)
+    await ClockCycles(dut.clk, 1)
+
+    assert dut.uio_out.value[7-EEPROM_CS]
+
+    await ClockCycles(dut.clk, 1, rising=False)
+    dut._log.info(f"Reading READ Command")
+    assert (await read8(dut)) == EEPROM_READ_COMMAND
+    dut._log.info(f"Reading Address")
+    assert (await read8(dut)) == 0
+    assert (await read8(dut)) == 5
+    await write8(dut, MEMORY[5])
+    await write8(dut, MEMORY[6])
+    dut._log.info(f"verified that it's running where it left of!")
+    assert dut.uo_out.value[7-0]

@@ -37,7 +37,6 @@ module tt_um_jimktrains_vslc (
   reg [3:0] fetch_prev_state;
   reg [3:0] fetch_state;
   reg [2:0] fetch_count;
-  reg [15:0] cur_addr;
 
   reg [7:0] uo_out_reg;
   reg [7:0] uio_oe_reg;
@@ -47,7 +46,7 @@ module tt_um_jimktrains_vslc (
 
 
   // List all unused inputs to prevent warnings
-  wire [21:0]_unused = {ena, eeprom_copi, eeprom_cs, timer_out, cycle_end_addr, stack_out, stack_out2};
+  wire [15:0]_unused = {ena, eeprom_copi, eeprom_cs, timer_out, cycle_end_addr, stack_out, stack_out2};
 
   localparam FETCH_STATE_INIT = 4'h0;
   localparam FETCH_STATE_CS_EEPROM_HIGH = 4'h1;
@@ -65,11 +64,6 @@ module tt_um_jimktrains_vslc (
   localparam FETCH_STATE_SEND_ADDRESS_2OF2 = 4'hE;
   localparam FETCH_STATE_READ_RESET_VECTOR_2OF2 = 4'hF;
 
-  localparam INSTR_PUSH_74     = 4'h0;
-  localparam INSTR_POP_74      = 5'h1;
-  localparam INSTR_SET_74      = 5'h2;
-  localparam INSTR_RESET_74    = 5'h3;
-
   localparam INSTR_CLR    = 8'hf0;
   localparam INSTR_SETALL = 8'hf1;
   localparam INSTR_SWAP   = 8'hf2;
@@ -85,10 +79,10 @@ module tt_um_jimktrains_vslc (
   localparam INSTR_SETUP_CLOCKDIV_74 = 4'h4;
   localparam INSTR_SETUP_MODE_74 = 4'h5;
 
-  localparam [3:0]INSTR_STACK_PUSH_73 = 4'b0000;
-  localparam [3:0]INSTR_STACK_POP_73 = 4'b0001;
-  localparam [3:0]INSTR_STACK_SET_73 = 4'b0010;
-  localparam [3:0]INSTR_STACK_RESET_73 = 4'b0011;
+  localparam [3:0]INSTR_STACK_PUSH_74 = 4'b0000;
+  localparam [3:0]INSTR_STACK_POP_74 = 4'b0001;
+  localparam [3:0]INSTR_STACK_SET_74 = 4'b0010;
+  localparam [3:0]INSTR_STACK_RESET_74 = 4'b0011;
 
   localparam [4:0]INSTR_OTHER_RISING_73 = 5'b11100;
   localparam [4:0]INSTR_OTHER_FALLING_73 = 5'b11101;
@@ -96,8 +90,9 @@ module tt_um_jimktrains_vslc (
 
   localparam INSTR_MSB = 7;
 
-  reg [15:0]cycle_start_addr;
-  reg [15:0]cycle_end_addr;
+  reg [9:0]cycle_start_addr;
+  reg [9:0]cycle_end_addr;
+  reg [9:0] cur_addr;
   reg [7:0]instr;
   wire [1:0]instr_class;
   wire [2:0]regid;
@@ -129,7 +124,9 @@ module tt_um_jimktrains_vslc (
   wire eeprom_copi; assign eeprom_copi = uio_out[EEPROM_COPI];
   wire eeprom_cipo; assign eeprom_cipo = uio_in[EEPROM_CIPO];
   wire timer_out; assign timer_out = uio_out[TIMER_OUTPUT];
-  wire cycle_start; assign cycle_start = uio_in[CYCLE_START];
+  wire cycle_start;
+  reg cycle_should_start;
+  assign cycle_start = uio_in[CYCLE_START] || cycle_should_start;
 
   assign instr_class[1:0] = instr[INSTR_MSB -: 2];
   assign instr_clock_div = instr[3:0];
@@ -198,6 +195,9 @@ module tt_um_jimktrains_vslc (
         FETCH_STATE_CS_EEPROM_HIGH: begin
           fetch_state <= FETCH_STATE_CS_EEPROM;
           fetch_prev_state <= fetch_state;
+          cur_addr <= cycle_start_addr;
+          fetch_count <= 3'h7;
+          cycle_should_start <= 0;
         end
         FETCH_STATE_CS_EEPROM: begin
           fetch_state <= FETCH_STATE_SEND_READ_CMD;
@@ -211,7 +211,7 @@ module tt_um_jimktrains_vslc (
               FETCH_STATE_SEND_ADDRESS: fetch_state <= FETCH_STATE_SEND_ADDRESS_2OF2;
               FETCH_STATE_SEND_ADDRESS_2OF2: begin
                 case (cycle_start_addr)
-                  16'h00: fetch_state <= FETCH_STATE_READ_RESET_VECTOR;
+                  10'h00: fetch_state <= FETCH_STATE_READ_RESET_VECTOR;
                   default: fetch_state <= FETCH_STATE_READ_INSTR;
                 endcase
               end
@@ -220,11 +220,17 @@ module tt_um_jimktrains_vslc (
               FETCH_STATE_READ_PROG_LAST_ADDR: fetch_state <= FETCH_STATE_READ_PROG_LAST_ADDR_2OF2;
               FETCH_STATE_READ_PROG_LAST_ADDR_2OF2: fetch_state <= FETCH_STATE_READ_INSTR;
               FETCH_STATE_READ_INSTR: begin
-                if (cur_addr > cycle_end_addr) fetch_state <= FETCH_STATE_CS_EEPROM_HIGH;
-                else if (cur_addr == 0) fetch_state <= FETCH_STATE_CS_EEPROM_HIGH; // wrapped address
-                else if (instr == INSTR_SETUP_PERIOD_A) fetch_state <= FETCH_STATE_READ_PERIOD_A_BYTE2OF3;
-                else if (instr == INSTR_SETUP_PERIOD_B) fetch_state <= FETCH_STATE_READ_PERIOD_B_BYTE2OF3;
-                else fetch_state <= FETCH_STATE_READ_INSTR;
+                // Past the end of the program or wrapped the address space.
+                if (cur_addr >= cycle_end_addr || cur_addr == 0) begin
+                  fetch_state <= FETCH_STATE_CS_EEPROM_HIGH;
+                  cycle_should_start <= 1'b1;
+                end else if (instr == INSTR_SETUP_PERIOD_A) begin
+                  fetch_state <= FETCH_STATE_READ_PERIOD_A_BYTE2OF3;
+                end else if (instr == INSTR_SETUP_PERIOD_B) begin
+                  fetch_state <= FETCH_STATE_READ_PERIOD_B_BYTE2OF3;
+                end else begin 
+                  fetch_state <= FETCH_STATE_READ_INSTR;
+                end
               end
               FETCH_STATE_READ_PERIOD_A_BYTE2OF3: fetch_state <= FETCH_STATE_READ_PERIOD_A_BYTE3OF3;
               FETCH_STATE_READ_PERIOD_A_BYTE3OF3: fetch_state <= FETCH_STATE_READ_INSTR;
@@ -257,10 +263,10 @@ module tt_um_jimktrains_vslc (
         case (fetch_prev_state)
           // I need to redo this to have it pull in 2 bytes if I continue
           // with this idea.
-          FETCH_STATE_READ_RESET_VECTOR: cycle_start_addr[7:0] <= instr;
-          FETCH_STATE_READ_RESET_VECTOR_2OF2: cycle_start_addr[15:8] <= instr;
-          FETCH_STATE_READ_PROG_LAST_ADDR: cycle_end_addr[7:0] <= instr;
-          FETCH_STATE_READ_PROG_LAST_ADDR_2OF2: cycle_end_addr[15:8] <= instr;
+          FETCH_STATE_READ_RESET_VECTOR: cycle_start_addr[9:8] <= instr[1:0];
+          FETCH_STATE_READ_RESET_VECTOR_2OF2: cycle_start_addr[7:0] <= instr;
+          FETCH_STATE_READ_PROG_LAST_ADDR: cycle_end_addr[9:8] <= instr[1:0];
+          FETCH_STATE_READ_PROG_LAST_ADDR_2OF2: cycle_end_addr[7:0] <= instr;
           default: cycle_start_addr <= cycle_start_addr;
         endcase
         case (fetch_prev_state)
@@ -268,22 +274,22 @@ module tt_um_jimktrains_vslc (
             case (instr_class)
               INSTR_CLASS_STACK: begin
                 case (instr[7:4])
-                  INSTR_STACK_PUSH_73: begin
+                  INSTR_STACK_PUSH_74: begin
                     stack[STACK_MSB:1] <= stack[STACK_MSB-1:0];
                     if (instr[3] == 1'b0) stack[0] <= ui_in_reg[regid];
                     else if (instr[3] == 1'b1) stack[0] <= uo_out_reg[regid];
                   end
-                  INSTR_STACK_POP_73: begin
+                  INSTR_STACK_POP_74: begin
                     stack[STACK_MSB-1:0] <= stack[STACK_MSB:1];
                     if (instr[3] == 1'b0) timer_enabled <= stack[0];
                     else if (instr[3] == 1'b1) uo_out_reg[regid] <= stack[0];
                   end
-                  INSTR_STACK_SET_73: begin
+                  INSTR_STACK_SET_74: begin
                     stack[STACK_MSB-1:0] <= stack[STACK_MSB:1];
                     if (instr[3] == 1'b0) timer_enabled <= stack[0] ? 1 : timer_enabled;
                     else if (instr[3] == 1'b1) uo_out_reg[regid] <= stack[0] ? 1 : uo_out_reg[regid];
                   end
-                  INSTR_STACK_RESET_73: begin
+                  INSTR_STACK_RESET_74: begin
                     stack[STACK_MSB-1:0] <= stack[STACK_MSB:1];
                     if (instr[3] == 1'b0) timer_enabled <= stack[0] ? 0 : timer_enabled;
                     else if (instr[3] == 1'b1) uo_out_reg[regid] <= stack[0] ? 0 : uo_out_reg[regid];
@@ -383,7 +389,7 @@ module tt_um_jimktrains_vslc (
         FETCH_STATE_CS_EEPROM: fetch_write_bit(EEPROM_READ_COMMAND);
         FETCH_STATE_SEND_READ_CMD: fetch_write_bit(EEPROM_READ_COMMAND);
         FETCH_STATE_SEND_ADDRESS_2OF2: fetch_write_bit(cycle_start_addr[7:0]);
-        FETCH_STATE_SEND_ADDRESS: fetch_write_bit(cycle_start_addr[15:8]);
+        FETCH_STATE_SEND_ADDRESS: fetch_write_bit({6'b0, cycle_start_addr[9:8]});
         FETCH_STATE_READ_RESET_VECTOR: fetch_read_bit();
         FETCH_STATE_READ_RESET_VECTOR_2OF2: fetch_read_bit();
         FETCH_STATE_READ_PROG_LAST_ADDR: fetch_read_bit();
@@ -419,11 +425,12 @@ module tt_um_jimktrains_vslc (
         8'b0;
       uio_out_reg <= (1 << EEPROM_CS);
       instr <= 8'b0;
-      cycle_start_addr <= 16'b0;
-      cycle_end_addr <= 16'b0;
+      cycle_start_addr <= 10'b0;
+      cycle_end_addr <= 10'b0;
       stack <= 16'b0;
       timer_reset();
-      cur_addr <= 16'b0;
+      cur_addr <= 10'b0;
+      cycle_should_start <= 1'b0;
     end else begin
       if (!timer_enabled) timer_reset();
       timer_update();
@@ -431,6 +438,7 @@ module tt_um_jimktrains_vslc (
       fetch_readwrite();
       fetch_cycle_execute();
       write_stack();
+
     end
   end
 
