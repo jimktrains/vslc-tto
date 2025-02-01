@@ -47,7 +47,7 @@ module tt_um_jimktrains_vslc (
 
 
   // List all unused inputs to prevent warnings
-  wire [3:0]_unused = {ena, eeprom_copi, eeprom_cs, timer_out };
+  wire [21:0]_unused = {ena, eeprom_copi, eeprom_cs, timer_out, cycle_end_addr, stack_out, stack_out2};
 
   localparam FETCH_STATE_INIT = 4'h0;
   localparam FETCH_STATE_CS_EEPROM_HIGH = 4'h1;
@@ -106,9 +106,8 @@ module tt_um_jimktrains_vslc (
   localparam STACK_MSB = 15;
   reg [STACK_MSB:0]stack = 16'b0;
   wire stack_out; assign stack_out = uio_out_reg[STACK_OUT];
+  wire stack_out2; assign stack_out2 = uio_out_reg[STACK_OUT2];
   wire tos; assign tos = stack[0];
-  wire nos; assign nos = stack[1];
-  wire ros; assign ros = stack[2];
 
   reg [15:0] timer_clock_counter;
   reg [3:0] timer_clock_divisor;
@@ -120,8 +119,7 @@ module tt_um_jimktrains_vslc (
   reg timer_mode;
 
   assign uo_out[7:0] = uo_out_reg[7:0];
-  assign uio_out[7:2] = uio_out_reg[7:2];
-  assign uio_out[EEPROM_CS] = uio_out_reg[EEPROM_CS];
+  assign uio_out[7:0] = uio_out_reg[7:0];
   assign uio_oe[7:0] = uio_oe_reg[7:0];
 
   // Giving these names just makes it easier to find in the vcd.
@@ -252,8 +250,10 @@ module tt_um_jimktrains_vslc (
       if (fetch_count == 3'h7) begin
         cycle_start_addr <= cycle_start_addr;
         case (fetch_prev_state)
-          FETCH_STATE_READ_RESET_VECTOR: cycle_start_addr <= instr;
-          FETCH_STATE_READ_PROG_LAST_ADDR: cycle_end_addr <= instr;
+          // I need to redo this to have it pull in 2 bytes if I continue
+          // with this idea.
+          FETCH_STATE_READ_RESET_VECTOR: cycle_start_addr[7:0] <= instr;
+          FETCH_STATE_READ_PROG_LAST_ADDR: cycle_end_addr[7:0] <= instr;
           default: cycle_start_addr <= cycle_start_addr;
         endcase
         case (fetch_prev_state)
@@ -358,10 +358,15 @@ module tt_um_jimktrains_vslc (
 
   task write_stack();
     begin
-      // uio_out_reg[STACK_OUT] <= stack[4'h0 + (5 - fetch_count)];
-      // uio_out_reg[TOS_OUT] <= tos;
-      // uio_out_reg[STACK_OUT2] <= stack[1];
-      //uio_out_reg[ROS_OUT] <= stack[2];
+      // Send it out after the computation is done.
+      if (fetch_count < 6 && fetch_count > 1) begin
+        uio_out_reg[STACK_OUT] <= stack[((fetch_count - 2) * 2) + 1];
+        uio_out_reg[STACK_OUT2] <= stack[(fetch_count - 2) * 2];
+      end else begin
+        uio_out_reg[STACK_OUT] <= 1'b0;
+        uio_out_reg[STACK_OUT2] <= 1'b0;
+      end
+      uio_out_reg[TOS_OUT] <= tos;
     end
   endtask
 
@@ -370,7 +375,7 @@ module tt_um_jimktrains_vslc (
       case (fetch_state)
         FETCH_STATE_CS_EEPROM: fetch_write_bit(EEPROM_READ_COMMAND);
         FETCH_STATE_SEND_READ_CMD: fetch_write_bit(EEPROM_READ_COMMAND);
-        FETCH_STATE_SEND_ADDRESS: fetch_write_bit(cycle_start_addr);
+        FETCH_STATE_SEND_ADDRESS: fetch_write_bit(cycle_start_addr[7:0]);
         FETCH_STATE_READ_RESET_VECTOR: fetch_read_bit();
         FETCH_STATE_READ_PROG_LAST_ADDR: fetch_read_bit();
         FETCH_STATE_READ_INSTR: fetch_read_bit();
@@ -385,6 +390,7 @@ module tt_um_jimktrains_vslc (
 
   reg cycle_in_prev;
 
+  // negedge for processing and clocking data out.
   always @(negedge clk) begin
     if (!rst_n) begin
       fetch_state <= FETCH_STATE_INIT;
@@ -408,9 +414,6 @@ module tt_um_jimktrains_vslc (
       stack <= 16'b0;
       timer_reset();
       cur_addr <= 16'b0;
-      ui_in_reg <= ui_in;
-      ui_in_prev_reg <= ui_in;
-      cycle_in_prev <= 0;
     end else begin
       if (!timer_enabled) timer_reset();
       timer_update();
@@ -418,27 +421,25 @@ module tt_um_jimktrains_vslc (
       fetch_readwrite();
       fetch_cycle_execute();
       write_stack();
-
     end
   end
 
+  // posedge for clocking data in.
   always @(posedge clk) begin
-    // Send it out after the computation is done.
-    if (fetch_count < 6 && fetch_count > 1) begin
-      uio_out_reg[STACK_OUT] <= stack[((fetch_count - 2) * 2) + 1];
-      uio_out_reg[STACK_OUT2] <= stack[(fetch_count - 2) * 2];
-    end
-    uio_out_reg[TOS_OUT] <= tos;
-    cycle_in_prev <= cycle_start;
-
-    if (cycle_start == 1 && cycle_in_prev == 0) begin
+    if (!rst_n) begin
       ui_in_reg <= ui_in;
-      ui_in_prev_reg <= ui_in_reg;
+      ui_in_prev_reg <= ui_in;
+      cycle_in_prev <= 0;
     end else begin
-      ui_in_reg <= ui_in_reg;
-      ui_in_prev_reg <= ui_in_prev_reg;
+      cycle_in_prev <= cycle_start;
+
+      if (cycle_start == 1 && cycle_in_prev == 0) begin
+        ui_in_reg <= ui_in;
+        ui_in_prev_reg <= ui_in_reg;
+      end else begin
+        ui_in_reg <= ui_in_reg;
+        ui_in_prev_reg <= ui_in_prev_reg;
+      end
     end
   end
-
-
 endmodule

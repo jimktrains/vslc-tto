@@ -335,11 +335,11 @@ async def write8(dut, v):
         x |= (i > 5) and (i < 7)
         dut.uio_in.value = x
         await ClockCycles(dut.clk, 1, rising=False)
-        if i < 6 and i > 1:
-            s = (((dut.uio_out.value[7-STACK_OUTPUT]) & 0x01) << (((7-i)-2)*2 + 1)) & 0xff
-            rs += s
-            s = (((dut.uio_out.value[7-NOS_OUPUT]) & 0x01) << (((7-i)-2)*2)) & 0xff
-            rs += s
+        if i < 7 and i > 2:
+            s1 = (((dut.uio_out.value[7-STACK_OUTPUT]) & 0x01) << (((7-i)-1)*2 + 1)) & 0xff
+            s2 = (((dut.uio_out.value[7-NOS_OUPUT]) & 0x01) << (((7-i)-1)*2)) & 0xff
+
+            rs += s1 + s2
     # rs += (((dut.uio_out.value[7-TOS_OUPUT]) & 0x01) << 0) & 0xff
     # rs += (((dut.uio_out.value[7-NOS_OUPUT]) & 0x01) << 1) & 0xff
     return rs
