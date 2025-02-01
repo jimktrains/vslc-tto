@@ -20,31 +20,34 @@ module tt_um_jimktrains_vslc (
 
   localparam TIMER_MODE_CYCLE = 0;
   localparam TIMER_MODE_ONESHOT = 1;
-  localparam TIMER_OUTPUT = 7;
 
   // https://ww1.microchip.com/downloads/en/DeviceDoc/22040A.pdf
   // SPI Serial EEPROM Family Data Sheet
   localparam EEPROM_READ_COMMAND = 8'b00000011;
-  localparam EEPROM_SCK = 0;
+
+  localparam CYCLE_START = 0;
   localparam EEPROM_CS = 1;
   localparam EEPROM_COPI = 2;
   localparam EEPROM_CIPO = 3;
+  localparam STACK_OUT2 = 4;
+  localparam TOS_OUT = 5;
   localparam STACK_OUT = 6;
+  localparam TIMER_OUTPUT = 7;
 
   reg [3:0] fetch_prev_state;
   reg [3:0] fetch_state;
   reg [2:0] fetch_count;
-  reg [7:0] cur_addr;
+  reg [15:0] cur_addr;
 
   reg [7:0] uo_out_reg;
   reg [7:0] uio_oe_reg;
   reg [7:0] uio_out_reg;
-  reg [7:0] uio_in_reg;
   reg [7:0] ui_in_reg;
+  reg [7:0] ui_in_prev_reg;
 
 
   // List all unused inputs to prevent warnings
-  wire [8:0]_unused = {ena, eeprom_oe_copi, eeprom_oe_sck, eeprom_oe_cs, eeprom_copi, eeprom_cs, eeprom_sck, timer_out, stack_out};
+  wire [3:0]_unused = {ena, eeprom_copi, eeprom_cs, timer_out };
 
   localparam FETCH_STATE_INIT = 4'h0;
   localparam FETCH_STATE_CS_EEPROM_HIGH = 4'h1;
@@ -65,6 +68,11 @@ module tt_um_jimktrains_vslc (
   localparam INSTR_SET_74      = 5'h2;
   localparam INSTR_RESET_74    = 5'h3;
 
+  localparam INSTR_CLR    = 8'hf0;
+  localparam INSTR_SETALL = 8'hf1;
+  localparam INSTR_SWAP   = 8'hf2;
+  localparam INSTR_ROT    = 8'hf3;
+
   localparam INSTR_CLASS_STACK = 2'b00;
   localparam INSTR_CLASS_SETUP = 2'b01;
   localparam INSTR_CLASS_LOGIC = 2'b10;
@@ -80,11 +88,14 @@ module tt_um_jimktrains_vslc (
   localparam [3:0]INSTR_STACK_SET_73 = 4'b0010;
   localparam [3:0]INSTR_STACK_RESET_73 = 4'b0011;
 
+  localparam [4:0]INSTR_OTHER_RISING_73 = 5'b11100;
+  localparam [4:0]INSTR_OTHER_FALLING_73 = 5'b11101;
+
 
   localparam INSTR_MSB = 7;
 
-  reg [7:0]cycle_start_addr;
-  reg [7:0]cycle_end_addr;
+  reg [15:0]cycle_start_addr;
+  reg [15:0]cycle_end_addr;
   reg [7:0]instr;
   wire [1:0]instr_class;
   wire [2:0]regid;
@@ -95,6 +106,9 @@ module tt_um_jimktrains_vslc (
   localparam STACK_MSB = 15;
   reg [STACK_MSB:0]stack = 16'b0;
   wire stack_out; assign stack_out = uio_out_reg[STACK_OUT];
+  wire tos; assign tos = stack[0];
+  wire nos; assign nos = stack[1];
+  wire ros; assign ros = stack[2];
 
   reg [15:0] timer_clock_counter;
   reg [3:0] timer_clock_divisor;
@@ -108,23 +122,20 @@ module tt_um_jimktrains_vslc (
   assign uo_out[7:0] = uo_out_reg[7:0];
   assign uio_out[7:2] = uio_out_reg[7:2];
   assign uio_out[EEPROM_CS] = uio_out_reg[EEPROM_CS];
-  assign uio_out[0] = clk & !uio_out_reg[EEPROM_CS];
   assign uio_oe[7:0] = uio_oe_reg[7:0];
 
   // Giving these names just makes it easier to find in the vcd.
   wire eeprom_cs; assign eeprom_cs = uio_out[EEPROM_CS];
-  wire eeprom_sck; assign eeprom_sck = uio_out[EEPROM_SCK];
   wire eeprom_copi; assign eeprom_copi = uio_out[EEPROM_COPI];
-  wire eeprom_oe_cs; assign eeprom_oe_cs = uio_oe_reg[EEPROM_CS];
-  wire eeprom_oe_sck; assign eeprom_oe_sck = uio_oe_reg[EEPROM_SCK];
-  wire eeprom_oe_copi; assign eeprom_oe_copi = uio_oe_reg[EEPROM_COPI];
+  wire eeprom_cipo; assign eeprom_cipo = uio_in[EEPROM_CIPO];
   wire timer_out; assign timer_out = uio_out[TIMER_OUTPUT];
+  wire cycle_start; assign cycle_start = uio_in[CYCLE_START];
 
   assign instr_class[1:0] = instr[INSTR_MSB -: 2];
   assign instr_clock_div = instr[3:0];
   assign instr_timer_mode_bit = instr[0];
 
-  assign regid = instr[INSTR_MSB-5 -:3];
+  assign regid = instr[2:0];
 
   always @(*) begin
   end
@@ -166,7 +177,7 @@ module tt_um_jimktrains_vslc (
   task timer_reset();
     begin
       timer_clock_counter <= 16'b0;
-      timer_clock_divisor <= 4'b0;
+      timer_clock_divisor <= 4'b0000;
       timer_counter <= 16'b0;
       timer_period_a <= 16'b1;
       timer_period_b <= 16'h2;
@@ -199,16 +210,16 @@ module tt_um_jimktrains_vslc (
               FETCH_STATE_SEND_READ_CMD: fetch_state <= FETCH_STATE_SEND_ADDRESS;
               FETCH_STATE_SEND_ADDRESS: begin
                 case (cycle_start_addr)
-                  8'h00: fetch_state <= FETCH_STATE_READ_RESET_VECTOR;
+                  // 8'h00: fetch_state <= FETCH_STATE_READ_RESET_VECTOR;
                   default: fetch_state <= FETCH_STATE_READ_INSTR;
                 endcase
               end
               FETCH_STATE_READ_RESET_VECTOR: fetch_state <= FETCH_STATE_READ_PROG_LAST_ADDR;
               FETCH_STATE_READ_PROG_LAST_ADDR: fetch_state <= FETCH_STATE_READ_INSTR;
               FETCH_STATE_READ_INSTR: begin
-                if (cur_addr > cycle_end_addr) fetch_state <= FETCH_STATE_CS_EEPROM_HIGH;
-                else if (cur_addr == 0) fetch_state <= FETCH_STATE_CS_EEPROM_HIGH; // wrapped address
-                else if (instr == INSTR_SETUP_PERIOD_A) fetch_state <= FETCH_STATE_READ_PERIOD_A_BYTE2OF3;
+                // if (cur_addr > cycle_end_addr) fetch_state <= FETCH_STATE_CS_EEPROM_HIGH;
+                // else if (cur_addr == 0) fetch_state <= FETCH_STATE_CS_EEPROM_HIGH; // wrapped address
+                if (instr == INSTR_SETUP_PERIOD_A) fetch_state <= FETCH_STATE_READ_PERIOD_A_BYTE2OF3;
                 else if (instr == INSTR_SETUP_PERIOD_B) fetch_state <= FETCH_STATE_READ_PERIOD_B_BYTE2OF3;
                 else fetch_state <= FETCH_STATE_READ_INSTR;
               end
@@ -270,17 +281,45 @@ module tt_um_jimktrains_vslc (
                     if (instr[3] == 1'b0) timer_enabled <= stack[0] ? 0 : timer_enabled;
                     else if (instr[3] == 1'b1) uo_out_reg[regid] <= stack[0] ? 0 : uo_out_reg[regid];
                   end
-                  default: begin end
+                  default: begin
+                    stack <= stack;
+                  end
                 endcase
               end
               INSTR_CLASS_LOGIC: begin
-                uo_out_reg[7:4] <= instr[3:0];
                 if (instr[5:4]== 2) stack[STACK_MSB - 1: 1] <= stack[STACK_MSB:2];
                 else if (instr[5:4]== 0) stack[STACK_MSB:1] <= stack[STACK_MSB - 1:0];
                 stack[0] <= instr[3'h3 - stack[1:0]];
               end
-              INSTR_CLASS_OTHER: begin end
+              INSTR_CLASS_OTHER: begin
+                case (instr[7:3])
+                  INSTR_OTHER_RISING_73: begin
+                    stack[STACK_MSB:1] <= stack[STACK_MSB - 1:0];
+                    stack[0] <= ui_in_reg[regid] == 1 && ui_in_prev_reg[regid] == 0;
+                  end
+                  INSTR_OTHER_FALLING_73: begin
+                    stack[STACK_MSB:1] <= stack[STACK_MSB - 1:0];
+                    stack[0] <= ui_in_reg[regid] == 0 && ui_in_prev_reg[regid] == 1;
+                  end
+                  default:
+                case (instr)
+                  INSTR_CLR: stack <= 16'h0000;
+                  INSTR_SETALL: stack <= 16'hffff;
+                  INSTR_SWAP: begin
+                    stack[1] <= stack[0];
+                    stack[0] <= stack[1];
+                  end
+                  INSTR_ROT: begin
+                    stack[0] <= stack[1];
+                    stack[1] <= stack[2];
+                    stack[2] <= stack[0];
+                  end
+                  default: stack[STACK_MSB:0] <= stack[STACK_MSB:0];
+                endcase
+              endcase
+              end
               INSTR_CLASS_SETUP: begin
+                stack <= stack;
                 case (instr[7:4])
                   INSTR_SETUP_CLOCKDIV_74: timer_clock_divisor <= instr_clock_div;
                   INSTR_SETUP_MODE_74: timer_mode <= instr_timer_mode_bit;
@@ -303,8 +342,8 @@ module tt_um_jimktrains_vslc (
 
   task fetch_read_bit();
     begin
-      instr[INSTR_MSB:1] <= instr[INSTR_MSB-1:0];
-      instr[0] <= uio_in_reg[EEPROM_CIPO];
+      //instr[INSTR_MSB:1] <= instr[INSTR_MSB-1:0];
+      instr[fetch_count] <= eeprom_cipo;
       fetch_count <= fetch_count - 1;
       cur_addr <= fetch_count == 0 ? cur_addr + 1 : cur_addr;
     end
@@ -319,7 +358,10 @@ module tt_um_jimktrains_vslc (
 
   task write_stack();
     begin
-      uio_out_reg[STACK_OUT] <= stack[7-fetch_count];
+      // uio_out_reg[STACK_OUT] <= stack[4'h0 + (5 - fetch_count)];
+      // uio_out_reg[TOS_OUT] <= tos;
+      // uio_out_reg[STACK_OUT2] <= stack[1];
+      //uio_out_reg[ROS_OUT] <= stack[2];
     end
   endtask
 
@@ -341,20 +383,34 @@ module tt_um_jimktrains_vslc (
     end
   endtask
 
+  reg cycle_in_prev;
+
   always @(negedge clk) begin
     if (!rst_n) begin
       fetch_state <= FETCH_STATE_INIT;
       fetch_prev_state <= FETCH_STATE_INIT;
       fetch_count <= 3'h7;
       uo_out_reg <= 8'b0;
-      uio_oe_reg <= (1 << EEPROM_SCK) + (1 << EEPROM_CS) + (1 << EEPROM_COPI) + (1 << TIMER_OUTPUT) + (1 << STACK_OUT);
+      uio_oe_reg <=
+        (8'b0 << CYCLE_START) +
+        (8'b1 << EEPROM_CS) +
+        (8'b1 << EEPROM_COPI) +
+        (8'b0 << EEPROM_CIPO) +
+        (8'b1 << STACK_OUT2) +
+        (8'b1 << TOS_OUT) +
+        (8'b1 << STACK_OUT) +
+        (8'b1 << TIMER_OUTPUT) +
+        8'b0;
       uio_out_reg <= (1 << EEPROM_CS);
       instr <= 8'b0;
-      cycle_start_addr <= 8'b0;
-      cycle_end_addr <= 8'b0;
+      cycle_start_addr <= 16'b0;
+      cycle_end_addr <= 16'b0;
       stack <= 16'b0;
       timer_reset();
-      cur_addr <= 8'b0;
+      cur_addr <= 16'b0;
+      ui_in_reg <= ui_in;
+      ui_in_prev_reg <= ui_in;
+      cycle_in_prev <= 0;
     end else begin
       if (!timer_enabled) timer_reset();
       timer_update();
@@ -362,12 +418,27 @@ module tt_um_jimktrains_vslc (
       fetch_readwrite();
       fetch_cycle_execute();
       write_stack();
+
     end
   end
 
   always @(posedge clk) begin
-    ui_in_reg <= ui_in;
-    uio_in_reg <= uio_in;
+    // Send it out after the computation is done.
+    if (fetch_count < 6 && fetch_count > 1) begin
+      uio_out_reg[STACK_OUT] <= stack[((fetch_count - 2) * 2) + 1];
+      uio_out_reg[STACK_OUT2] <= stack[(fetch_count - 2) * 2];
+    end
+    uio_out_reg[TOS_OUT] <= tos;
+    cycle_in_prev <= cycle_start;
+
+    if (cycle_start == 1 && cycle_in_prev == 0) begin
+      ui_in_reg <= ui_in;
+      ui_in_prev_reg <= ui_in_reg;
+    end else begin
+      ui_in_reg <= ui_in_reg;
+      ui_in_prev_reg <= ui_in_prev_reg;
+    end
   end
+
 
 endmodule

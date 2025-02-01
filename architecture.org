@@ -21,24 +21,6 @@
 
 #+BEGIN_SRC
 PUSH reg              0000 RRRR
-POP  reg              0001 RRRR
-SET  reg              0010 RRRR
-RESET reg             0011 RRRR
-
-NOT                   1000
-AND                   1001
-OR                    1010
-XOR                   1011
-IMPL                  1100
-BIMP                  1101
-NAND                  1110 May change this, but not a bad placeholder
-
-NOP                   1111
-#+END_SRC
-
-** Not Implemented yet
-#+BEGIN_SRC
-PUSH reg              0000 RRRR
 POP  reg              0001 1RRR
 SET  reg              0010 1RRR
 RESET reg             0011 1RRR
@@ -46,38 +28,31 @@ POP TIMER             0001 0XXX
 SET TIMER             0010 0XXX
 RESET TIMER           0011 0XXX
 
-STACK SWAP            0011 1001
-STACK ROL             0011 1011
-
-p            0011
-q            0101
-
+nos          0011
+tos          0101
            shift once
           shift twice
-dup     1000 0011
-over    1000 0101
-drop    1010 0101
+AND     1010 0001
+NAND    1010 1110
+OR      1010 0111
+NOR     1010 1000
+XOR     1010 0110
+BICOND  1010 1001
+IMPL    1010 1101
+NIMPL   1010 0010
+CONV    1010 1011
+NCONV   1010 0100
 
-zero    1000 0000
-one     1000 1111
+DUP     1000 1100
+OVER    1000 1010
+DROP    1010 1010
+ZERO    1000 0000
+ONE     1000 1111
+NOT     1001 0011
+OVERNOT 1010 0101
 
-not     1001 1100
-overnot 1010 1010
-
-and     1010 0001
-nand    1010 1110
-or      1010 0111
-nor     1010 1000
-xor     1010 0110
-bicond  1010 1001
-impl    1010 1101
-nimpl   1010 0010
-conv    1010 1011
-nconv   1010 0100
-
-rising  1111 0001
-falling 1111 0010
-
+CLR     1111 0000
+SETALL  1111 0001
 NOP     1111 1111
 
 SETUP TIMER PA period 0111 0000 PPPP PPPP PPPP PPPP P=period
@@ -85,7 +60,11 @@ SETUP TIMER PB period 0111 0001 PPPP PPPP PPPP PPPP P=period
 SETUP TIMER M mode    0100 000M M=cycle/one-shot
 SETUP TIMER CLOCKDIV  0101 DDDD D=log2(clock divisor)
 
+RISING     1110 0RRR
+FALLING    1110 1RRR
 
+STACK SWAP 1111 0010
+STACK ROT  1111 0011
 #+END_SRC
 
 * Instruction Cycle
