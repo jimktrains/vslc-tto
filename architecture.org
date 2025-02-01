@@ -1,20 +1,12 @@
 * General Description
 
-- 4 bit nibbles as processor word size
-- 1 bit databus
-- stack machine
-  - stack is cleared on cycle start
-  - code executes until a cycle start happens or the end of code memory is
+- Stack machine
+  - Code executes until a cycle start happens or the end of code memory is
     reached, in which case a new cycle is started
-- When in reset, you can shift data into the code memory
 - 8 input bits/registers mapped to pins
 - 8 output bits/registers mapped to pins
-- 1 error bit mapped to a pin (Not implemented yet)
-- X bit data stack (let's see how big it can be made?) (32bits, currently)
-- X nibble code memory (32 nibbles, currently)
-- 1 16-bit timer/counter with clock divisor (not implemented yet)
-- 1 main clock divisor (to take the system/instruction clock to a cycle
-  clock) (not implemented yet)
+- 16 bit data stack
+- 1 10-bit timer/counter with clock divisor
 
 * Opcodes
   ** Implemented
@@ -55,8 +47,8 @@ CLR     1111 0000
 SETALL  1111 0001
 NOP     1111 1111
 
-SETUP TIMER PA period 0111 0000 PPPP PPPP PPPP PPPP P=period
-SETUP TIMER PB period 0111 0001 PPPP PPPP PPPP PPPP P=period
+SETUP TIMER PA period 0111 0000 XXXX XXPP PPPP PPPP P=period
+SETUP TIMER PB period 0111 0001 XXXX XXPP PPPP PPPP P=period
 SETUP TIMER M mode    0100 000M M=cycle/one-shot
 SETUP TIMER CLOCKDIV  0101 DDDD D=log2(clock divisor)
 
