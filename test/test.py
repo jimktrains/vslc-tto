@@ -37,8 +37,8 @@ INSTR_NCONV   = 0b10100100
 INSTR_DUP     = 0b10001100
 INSTR_OVER    = 0b10001010
 INSTR_DROP    = 0b10101010
-INSTR_ZERO    = 0b10000000
-INSTR_ONE     = 0b10001111
+INSTR_ZERO    = 0b10110000
+INSTR_ONE     = 0b10111111
 INSTR_NOT     = 0b10010011
 INSTR_OVERNOT = 0b10100101
 
@@ -59,8 +59,8 @@ instr_names = {
 0b10000011: "INSTR_OVER",
 0b10100101: "INSTR_DROP",
 0b10101010: "INSTR_OVERNOT",
-0b10000000: "INSTR_ZERO",
-0b10001111: "INSTR_ONE",
+0b10110000: "INSTR_ZERO",
+0b10111111: "INSTR_ONE",
 }
 
 # These silly little functions just make debugging easier when it's
@@ -162,7 +162,7 @@ def generate_timer_test():
 
 EEPROM_READ_COMMAND = 0x03;
 
-#CYCLE_START = 0;
+CYCLE_START = 7;
 EEPROM_COPI = 0;
 EEPROM_CIPO = 1;
 EEPROM_CS = 2;
@@ -335,7 +335,7 @@ async def write8(dut, v):
         v3 = v2 << EEPROM_CIPO
         x |= v3
         # Do a cycle every instruction
-        x |= (i > 5) and (i < 7)
+        x |= ((i > 5) and (i < 7)) << CYCLE_START
         dut.uio_in.value = x
         await ClockCycles(dut.clk, 1, rising=False)
         #if i < 7 and i > 2:
@@ -377,6 +377,7 @@ async def test_project(dut):
     last_a = None
     adj_addr = 0
 
+    await ClockCycles(dut.clk, 1)
     for (i,(m,a)) in enumerate(MEMORY):
         if (isinstance(m, str)):
             dut._log.info(f"#### {i=} {m=}")
@@ -435,7 +436,6 @@ async def test_project(dut):
 
 @cocotb.test()
 async def test_addressing(dut):
-    return
     dut._log.info("Start, the Second")
 
     # Set the clock period to 10 us (100 KHz)
@@ -461,19 +461,17 @@ async def test_addressing(dut):
     dut.uio_in.value = 0
     dut.rst_n.value = 0
     await ClockCycles(dut.clk, 1)
-    await ClockCycles(dut.clk, 1)
-    dut.rst_n.value = 1
-    await ClockCycles(dut.clk, 1)
-
     assert dut.uio_out.value[7-EEPROM_CS]
+    dut.rst_n.value = 1
     dut._log.info(f"Reset Done")
-    await ClockCycles(dut.clk, 1)
     dut._log.info(f"Reading READ Command")
     assert (await read8(dut)) == EEPROM_READ_COMMAND
+    assert not dut.uio_out.value[7-EEPROM_CS]
     dut._log.info(f"Reading Address")
     assert (await read8(dut)) == 0
     assert (await read8(dut)) == 0
 
+    await ClockCycles(dut.clk, 1)
     await write8(dut, MEMORY[0])
     await write8(dut, MEMORY[1])
     await write8(dut, MEMORY[2])
@@ -482,23 +480,20 @@ async def test_addressing(dut):
     await write8(dut, MEMORY[5])
     await write8(dut, MEMORY[6])
     dut._log.info(f"Got to the end of the program")
+    await ClockCycles(dut.clk, 1)
     assert not dut.uo_out.value[7-0]
-    # write8 stops on a falling edge
-    # and we need a full clock cycle
-    # to get to the start of the next
-    # cycle.
-    await ClockCycles(dut.clk, 1)
-    await ClockCycles(dut.clk, 1)
 
-    assert dut.uio_out.value[7-EEPROM_CS]
-
-    await ClockCycles(dut.clk, 1, rising=False)
     dut._log.info(f"Reading READ Command")
     assert (await read8(dut)) == EEPROM_READ_COMMAND
+    assert not dut.uio_out.value[7-EEPROM_CS]
+    assert not dut.uio_out.value[7-EEPROM_CS]
     dut._log.info(f"Reading Address")
     assert (await read8(dut)) == 0
     assert (await read8(dut)) == 5
-    await write8(dut, MEMORY[5])
-    await write8(dut, MEMORY[6])
     dut._log.info(f"verified that it's running where it left of!")
+    await ClockCycles(dut.clk, 1, rising=False)
+    dut._log.info(f"{MEMORY[5]=:02x}")
+    await write8(dut, MEMORY[5])
+    dut._log.info(f"{MEMORY[6]=:02x}")
+    await write8(dut, MEMORY[6])
     assert dut.uo_out.value[7-0]
