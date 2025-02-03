@@ -9,16 +9,31 @@
 - 1 10-bit timer/counter with clock divisor
 
 * Opcodes
+
   ** Implemented
 
+Bit 7,6:
+      00: Register
+      01: Register
+      10: Truth Table
+      11: Other
+Bit 5,4:
+    Register:
+      00 Push
+      01 Pop
+      10 Set
+      11 Reset
+    Truth Table: 2s complement shift amount
+
+
 #+BEGIN_SRC
-PUSH reg              0000 RRRR
+PUSH io reg           0000 IRRR
 POP  reg              0001 1RRR
 SET  reg              0010 1RRR
 RESET reg             0011 1RRR
-POP TIMER             0001 0XXX
-SET TIMER             0010 0XXX
-RESET TIMER           0011 0XXX
+POP TIMER             0001 0000
+SET TIMER             0010 0000
+RESET TIMER           0011 0000
 
 nos          0011
 tos          0101
@@ -45,18 +60,18 @@ OVERNOT 1010 0101
 
 CLR     1111 0000
 SETALL  1111 0001
+SWAP    1111 0010
+ROT     1111 0011
 NOP     1111 1111
 
-SETUP TIMER PA period 0111 0000 XXXX XXPP PPPP PPPP P=period
-SETUP TIMER PB period 0111 0001 XXXX XXPP PPPP PPPP P=period
-SETUP TIMER M mode    0100 000M M=cycle/one-shot
-SETUP TIMER CLOCKDIV  0101 DDDD D=log2(clock divisor)
+TIMER PA period  0111 00PP PPPP PPPP P=period
+TIMER PB period  0111 01PP PPPP PPPP P=period
+TIMER M mode     0111 000M M=cycle/one-shot
+TIMER CLOCKDIV D 0111 1DDD D=log2(clock divisor)-1
 
 RISING     1110 0RRR
 FALLING    1110 1RRR
 
-STACK SWAP 1111 0010
-STACK ROT  1111 0011
 #+END_SRC
 
 * Instruction Cycle
