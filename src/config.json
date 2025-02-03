@@ -1,5 +1,5 @@
 {
-    "MACROS": {
+  "MACROS": {
     "my_logo": {
       "instances": {
         "logo": {
@@ -7,8 +7,8 @@
           "orientation": "N"
         }
       },
-      "gds": ["dir::../art/jsk.gds"],
-      "lef": ["dir::../art/jsk.lef"]
+      "gds": ["dir::../macros/my_logo.gds"],
+      "lef": ["dir::../macros/my_logo.lef"]
     }
   },
   "IGNORE_DISCONNECTED_MODULES": [

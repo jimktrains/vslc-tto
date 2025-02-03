@@ -10,9 +10,9 @@ import gdspy
 import sys
 from PIL import Image
 
-PNG_NAME = "jsk.png"
-CELL_NAME = "jsk"
-GDS_NAME = "jsk.gds"
+PNG_NAME = "my_logo.png"
+CELL_NAME = "my_logo"
+GDS_NAME = "my_logo.gds"
 
 BOUNDARY_LAYERS = [
     (235, 4), # prBndry, boundary
