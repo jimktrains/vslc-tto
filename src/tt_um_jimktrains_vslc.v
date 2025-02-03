@@ -5,11 +5,6 @@
 
 `default_nettype none
 
-(* blackbox *) (* keep *)
-module my_logo ();
-endmodule
-
-
 module tt_um_jimktrains_vslc (
 
   input  wire [7:0] ui_in,   // Dedicated inputs
@@ -21,9 +16,6 @@ module tt_um_jimktrains_vslc (
   input  wire       clk,      // clock
   input  wire       rst_n    // reset_n - low to reset
 );
-
-  (* keep *)
-  my_logo logo();
 
   localparam SPI_COPI    = 0;
   localparam SPI_CIPO    = 1;
