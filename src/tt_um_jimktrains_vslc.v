@@ -204,42 +204,18 @@ module tt_um_jimktrains_vslc (
       (cycle == CYCLE_EEPROM_SEND_ADDRL) ||
         (read_cycle_counter != 0)) ? cur_addr : cur_addr + 1;
 
+      if (timer_enabled) uo_out_reg[TIMER_OUTPUT] <= timer_output;
+
       if (read_cycle_counter == 0) begin
         if (cycle == CYCLE_EEPROM_READ_VECTH) begin
-          stack <= stack;
-          uo_out_reg[6:0] <= uo_out_reg[6:0];
-          uo_out_reg[TIMER_OUTPUT] <= timer_output;
-          timer_enabled <= timer_enabled;
           start_addr[9:8] <= instr[1:0];
-          start_addr[7:0] <= start_addr[7:0];
-          end_addr <= end_addr;
         end else if (cycle == CYCLE_EEPROM_READ_VECTL) begin
-          stack <= stack;
-          uo_out_reg[6:0] <= uo_out_reg[6:0];
-          uo_out_reg[TIMER_OUTPUT] <= timer_output;
-          timer_enabled <= timer_enabled;
-          start_addr[9:8] <= start_addr[9:8];
           start_addr[7:0] <= instr[7:0];
-          end_addr <= end_addr;
         end else if (cycle == CYCLE_EEPROM_READ_ENDH) begin
-          stack <= stack;
-          uo_out_reg[6:0] <= uo_out_reg[6:0];
-          uo_out_reg[TIMER_OUTPUT] <= timer_output;
-          timer_enabled <= timer_enabled;
-          start_addr<= start_addr;
           end_addr[9:8] <= instr[1:0];
-          end_addr[7:0] <= end_addr[7:0];
         end else if (cycle == CYCLE_EEPROM_READ_ENDL) begin
-          stack <= stack;
-          uo_out_reg[6:0] <= uo_out_reg[6:0];
-          uo_out_reg[TIMER_OUTPUT] <= timer_output;
-          timer_enabled <= timer_enabled;
-          start_addr<= start_addr;
-          end_addr[9:8] <= end_addr[9:8];
           end_addr[7:0] <= instr;
         end else if (cycle == CYCLE_EEPROM_READ) begin
-          start_addr <= start_addr;
-          end_addr <= end_addr;
           stack[15] <= instr_clr ? 0 : (
                        instr_setall ? 1 : (
                        shift_left_1 ? stack[14] : (
@@ -264,27 +240,17 @@ module tt_um_jimktrains_vslc (
                       shift_left_1 ? 0 : (
                       shift_right_1 ? stack[1] : stack[0]))));
 
-                    if (!(timer_enabled && regid == TIMER_OUTPUT)) begin
-                      uo_out_reg[regid] <= !instr_pop_type ? uo_out_reg[regid]: (
-                        instr_pop ? stack[0] : (
-                        !stack[0] ? uo_out_reg[regid] : (
-                        instr_set ? 1 : (
-                        instr_reset ? 0 : uo_out_reg[regid]))));
-                      uo_out_reg[TIMER_OUTPUT] <= timer_output;
-                    end
-                    uo_out_reg[TIMER_OUTPUT] <= timer_output;
-
+          if (!(timer_enabled && regid == TIMER_OUTPUT)) begin
+            uo_out_reg[regid] <= !instr_pop_type ? uo_out_reg[regid]: (
+              instr_pop ? stack[0] : (
+              !stack[0] ? uo_out_reg[regid] : (
+              instr_set ? 1 : (
+              instr_reset ? 0 : uo_out_reg[regid]))));
+          end
 
           timer_enabled <= should_set_enable_timer ? 1 : (should_reset_enable_timer ? 0 : timer_enabled);
+          if (timer_enabled && should_reset_enable_timer) uo_out_reg[TIMER_OUTPUT] <= 0;
         end
-      end else begin
-        stack <= stack;
-        uo_out_reg[6:0] <= uo_out_reg[6:0];
-        uo_out_reg[TIMER_OUTPUT] <= timer_output;
-        timer_enabled <= timer_enabled;
-        cur_addr <= cur_addr;
-        start_addr <= start_addr;
-        end_addr <= end_addr;
       end
     end
   end
