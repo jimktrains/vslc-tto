@@ -166,8 +166,7 @@ CYCLE_START = 7;
 EEPROM_COPI = 0;
 EEPROM_CIPO = 1;
 EEPROM_CS = 2;
-#STACK_OUTPUT2 = 4;
-STACK_OUTPUT = 5;
+STACK_OUTPUT = 3;
 TOS_OUPUT = 6;
 TIMER_OUTPUT = 7;
 
@@ -176,8 +175,10 @@ msg = lambda m : (m, None)
 
 def test_stack(expected):
     def y(dut, stack):
+        if stack != expected:
+            dut._log.info(f"expected stack={expected:08b}")
+            return False
         return True
-        return stack == expected
     return y
 
 def pop_test(expected):
@@ -338,14 +339,13 @@ async def write8(dut, v):
         x |= ((i > 5) and (i < 7)) << CYCLE_START
         dut.uio_in.value = x
         await ClockCycles(dut.clk, 1, rising=False)
-        #if i < 7 and i > 2:
-        #    s1 = (((dut.uio_out.value[7-STACK_OUTPUT]) & 0x01) << (((7-i)-1)*2 + 1)) & 0xff
-        #    s2 = (((dut.uio_out.value[7-STACK_OUTPUT2]) & 0x01) << (((7-i)-1)*2)) & 0xff
+        rs += (dut.uio_out.value[7-STACK_OUTPUT] << i)
 
             #rs += s1 + s2
     # rs += (((dut.uio_out.value[7-TOS_OUPUT]) & 0x01) << 0) & 0xff
     # rs += (((dut.uio_out.value[7-STACK_OUTPUT2]) & 0x01) << 1) & 0xff
     return rs
+
 
 @cocotb.test()
 async def test_project(dut):
