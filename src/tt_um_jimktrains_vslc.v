@@ -16,35 +16,32 @@ module tt_um_jimktrains_vslc (
   input  wire       clk,      // clock
   input  wire       rst_n    // reset_n - low to reset
 );
-  reg [3:0] timer_clock_divisor;
-  reg [9:0] timer_period_a;
-  reg [9:0] timer_period_b;
-  reg timer_set;
-  reg timer_reset;
-  wire timer_enabled;
-  wire timer_output;
+  wire instr_ready;
+  wire [15:0]stack;
+  assign instr_ready = (!rst_n && clk) || (cycle == CYCLE_EEPROM_READ && read_cycle_counter == 0);
 
-  timer tim0(
+  executor exec(
     clk,
-    timer_clock_divisor,
-    timer_period_a,
-    timer_period_b,
-    timer_set,
-    timer_reset,
-    timer_enabled,
-    timer_output
+    instr_ready,
+    rst_n,
+    instr,
+    ui_in_reg,
+    ui_in_prev_reg,
+    TIMER_OUTPUT,
+    uo_out,
+    stack
   );
   wire _unused = ena;
 
-  localparam SPI_COPI    = 0;
-  localparam SPI_CIPO    = 1;
-  localparam EEPROM_CS   = 2;
-  localparam STACK_OUT   = 3;
-  localparam IO_OUT_4    = 4;
-  localparam IO_OUT_5    = 5;
-  localparam TOS_OUT     = 6;
-  localparam SCAN_CYCLE_TRIGGER_IN    = 7;
-  localparam TIMER_OUTPUT = 7;
+  localparam SPI_COPI              = 3'h0;
+  localparam SPI_CIPO              = 3'h1;
+  localparam EEPROM_CS             = 3'h2;
+  localparam STACK_OUT             = 3'h3;
+  localparam IO_OUT_4              = 3'h4;
+  localparam IO_OUT_5              = 3'h5;
+  localparam TOS_OUT               = 3'h6;
+  localparam SCAN_CYCLE_TRIGGER_IN = 3'h7;
+  localparam TIMER_OUTPUT          = 3'h7;
 
   reg copi;
   wire cipo;
@@ -69,15 +66,12 @@ module tt_um_jimktrains_vslc (
   assign uio_out[STACK_OUT] = stack[{1'b0, 3'h7 - (cycle_counter + 3'h1)}];
   assign uio_out[IO_OUT_4]  = 0;
   assign uio_out[IO_OUT_5]  = 0;
-  assign uio_out[TOS_OUT]  = tos;
+  assign uio_out[TOS_OUT]  = stack[0];
   assign uio_out[SCAN_CYCLE_TRIGGER_IN]  = 0;
   assign scan_cycle_trigger_in = uio_in[SCAN_CYCLE_TRIGGER_IN];
 
   reg [7:0]ui_in_reg;
   reg [7:0]ui_in_prev_reg;
-  reg [7:0]uo_out_reg;
-
-  assign uo_out = uo_out_reg;
 
 
   reg [7:0]instr;
@@ -99,7 +93,128 @@ module tt_um_jimktrains_vslc (
   wire [2:0]read_cycle_counter;
   assign read_cycle_counter = cycle_counter + 1;
 
+
+  localparam EEPROM_READ_INSTR = 8'b00000011;
+
+  reg [9:0]start_addr;
+  reg [9:0]end_addr;
+  reg [9:0]cur_addr;
+
+  wire [7:0]start_addr_h;
+  wire [7:0]start_addr_l;
+  assign start_addr_h = {6'b0, start_addr[9:8]};
+  assign start_addr_l = start_addr[7:0];
+
+  reg auto_scan_cycle;
+  wire scan_cycle_clk = auto_scan_cycle || scan_cycle_trigger_in;
+
+  always @(negedge clk) begin
+    if (!rst_n) begin
+      cycle_counter <= 7;
+      start_addr <= 0;
+      end_addr <= 0;
+      cur_addr <= 0;
+      copi <= 0;
+      cycle <= CYCLE_EEPROM_RESET;
+    end else begin
+
+      copi <= (cycle == CYCLE_EEPROM_RESET) ? EEPROM_READ_INSTR[7] : (
+              (cycle == CYCLE_EEPROM_SEND_READ) ? EEPROM_READ_INSTR[cycle_counter] : (
+              (cycle == CYCLE_EEPROM_SEND_ADDRH ? start_addr_h[cycle_counter] :
+              (cycle == CYCLE_EEPROM_SEND_ADDRL ? start_addr_l[cycle_counter] : 0))));
+
+      cycle_counter <= (cycle == CYCLE_EEPROM_RESET) ? 6 : (cycle_counter - 1);
+
+      casez ({cycle, read_cycle_counter})
+        {CYCLE_EEPROM_RESET, 3'b?}: cycle <= CYCLE_EEPROM_SEND_READ;
+        {CYCLE_EEPROM_SEND_READ, 3'b0}: cycle <= CYCLE_EEPROM_SEND_ADDRH;
+        {CYCLE_EEPROM_SEND_ADDRH, 3'b0}: cycle <= CYCLE_EEPROM_SEND_ADDRL;
+        {CYCLE_EEPROM_SEND_ADDRL, 3'b0}: cycle <= (start_addr == 0) ? CYCLE_EEPROM_READ_VECTH : CYCLE_EEPROM_READ ;
+        {CYCLE_EEPROM_READ_VECTH, 3'b0}: cycle <= CYCLE_EEPROM_READ_VECTL;
+        {CYCLE_EEPROM_READ_VECTL, 3'b0}: cycle <= CYCLE_EEPROM_READ_ENDH;
+        {CYCLE_EEPROM_READ_ENDH, 3'b0}: cycle <= CYCLE_EEPROM_READ_ENDL;
+        {CYCLE_EEPROM_READ_ENDL, 3'b0}: cycle <= CYCLE_EEPROM_READ;
+        {CYCLE_EEPROM_READ, 3'b0}: cycle <= (cur_addr >= end_addr && cur_addr != 0) ?  CYCLE_EEPROM_RESET : CYCLE_EEPROM_READ;
+        default: cycle <= cycle;
+      endcase
+
+      auto_scan_cycle <= cycle == CYCLE_EEPROM_RESET;
+
+      cur_addr <= ((cycle == CYCLE_EEPROM_RESET) ||
+      (cycle == CYCLE_EEPROM_SEND_READ) ||
+      (cycle == CYCLE_EEPROM_SEND_ADDRH) ||
+      (cycle == CYCLE_EEPROM_SEND_ADDRL) ||
+        (read_cycle_counter != 0)) ? cur_addr : cur_addr + 1;
+
+      if (read_cycle_counter == 0) begin
+        if (cycle == CYCLE_EEPROM_READ_VECTH) begin
+          start_addr[9:8] <= instr[1:0];
+        end else if (cycle == CYCLE_EEPROM_READ_VECTL) begin
+          start_addr[7:0] <= instr[7:0];
+        end else if (cycle == CYCLE_EEPROM_READ_ENDH) begin
+          end_addr[9:8] <= instr[1:0];
+        end else if (cycle == CYCLE_EEPROM_READ_ENDL) begin
+          end_addr[7:0] <= instr;
+        end
+      end
+    end
+  end
+
+  always @(posedge scan_cycle_clk) begin
+    if (!rst_n) begin
+      ui_in_reg <= ui_in;
+      ui_in_prev_reg <= ui_in;
+    end else begin
+      ui_in_reg <= ui_in;
+      ui_in_prev_reg <= ui_in_reg;
+    end
+  end
+
+  always @(posedge clk) begin
+    if (!rst_n) begin
+      instr <= 0;
+
+    end else begin
+      instr[read_cycle_counter] <= cipo;
+    end
+  end
+endmodule
+
+module executor(
+  input clk,
+  input instr_ready,
+  input rst_n,
+  input [7:0] instr,
+  input [7:0]ui_in,
+  input [7:0]ui_in_prev,
+  input [2:0]timer_reg,
+  output [7:0]uo_out,
+  output [15:0] stack_o
+);
+  reg [3:0] timer_clock_divisor;
+  reg [9:0] timer_period_a;
+  reg [9:0] timer_period_b;
+  wire timer_enabled;
+  wire timer_output;
+
+  timer tim0(
+    clk,
+    rst_n,
+    timer_clock_divisor,
+    timer_period_a,
+    timer_period_b,
+    timer_set,
+    timer_reset,
+    timer_enabled,
+    timer_output
+  );
+
   reg [15:0]stack;
+  reg [7:0]uo_out_reg;
+  reg timer_set;
+  reg timer_reset;
+  assign stack_o = stack;
+  assign uo_out = uo_out_reg;
   wire tos = stack[0];
   wire nos = stack[1];
   wire hos = stack[2];
@@ -118,7 +233,7 @@ module tt_um_jimktrains_vslc (
   wire instr_push_type = instr_push;
   wire instr_pop_type = (instr_pop || instr_set || instr_reset);
   wire toreg = instr[3] && instr_pop_type;
-  wire push_result = ioreg ? uo_out_reg[regid] : ui_in_reg[regid];
+  wire push_result = ioreg ? uo_out[regid] : ui_in[regid];
 
   // Every logic operation conceptually pops once or twice, or we pop none
   // for pushing constant data only.
@@ -150,8 +265,8 @@ module tt_um_jimktrains_vslc (
   wire has_3_result = instr_rot;
 
   wire expected_prev_state = instr[3];
-  wire temporal_result = (ui_in_reg[regid] == ~expected_prev_state) &&
-                         (ui_in_prev_reg[regid] == expected_prev_state);
+  wire temporal_result = (ui_in[regid] == ~expected_prev_state) &&
+                         (ui_in_prev[regid] == expected_prev_state);
 
   wire res2 = (instr_rot && tos);
   wire res1 = (instr_swap && tos) ||
@@ -165,77 +280,16 @@ module tt_um_jimktrains_vslc (
   wire should_set_enable_timer = (instr_pop_type && toreg == 0 && tos && (instr_pop || instr_set));
   wire should_reset_enable_timer = (instr_pop_type && toreg == 0 && ((!tos && instr_pop) || (tos && instr_reset)));
 
-  localparam EEPROM_READ_INSTR = 8'b00000011;
-
-  reg [9:0]start_addr;
-  reg [9:0]end_addr;
-  reg [9:0]cur_addr;
-
-  wire [7:0]start_addr_h;
-  wire [7:0]start_addr_l;
-  assign start_addr_h = {6'b0, start_addr[9:8]};
-  assign start_addr_l = start_addr[7:0];
-
-  reg auto_scan_cycle;
-  wire scan_cycle_clk = auto_scan_cycle || scan_cycle_trigger_in;
-
   always @(negedge clk) begin
     if (!rst_n) begin
-      cycle_counter <= 7;
-      start_addr <= 0;
-      end_addr <= 0;
-      cur_addr <= 0;
-      uo_out_reg <= 0;
       stack <= 16'b0;
-      copi <= 0;
-      cycle <= CYCLE_EEPROM_RESET;
+      uo_out_reg <= 8'b0;
+      timer_set <= 1'b0;
+      timer_reset <= 1'b1;
       timer_clock_divisor <= 0;
       timer_period_a <= 2;
       timer_period_b <= 3;
-      timer_set <= 0;
-      timer_reset <= 1;
-    end else begin
-
-      copi <= (cycle == CYCLE_EEPROM_RESET) ? EEPROM_READ_INSTR[7] : (
-              (cycle == CYCLE_EEPROM_SEND_READ) ? EEPROM_READ_INSTR[cycle_counter] : (
-              (cycle == CYCLE_EEPROM_SEND_ADDRH ? start_addr_h[cycle_counter] :
-              (cycle == CYCLE_EEPROM_SEND_ADDRL ? start_addr_l[cycle_counter] : 0))));
-
-      cycle_counter <= (cycle == CYCLE_EEPROM_RESET) ? 6 : (cycle_counter - 1);
-
-      casez ({cycle, read_cycle_counter})
-        {CYCLE_EEPROM_RESET, 3'b?}: cycle <= CYCLE_EEPROM_SEND_READ;
-        {CYCLE_EEPROM_SEND_READ, 3'b0}: cycle <= CYCLE_EEPROM_SEND_ADDRH;
-        {CYCLE_EEPROM_SEND_ADDRH, 3'b0}: cycle <= CYCLE_EEPROM_SEND_ADDRL;
-        {CYCLE_EEPROM_SEND_ADDRL, 3'b0}: cycle <= (start_addr == 0) ? CYCLE_EEPROM_READ_VECTH : CYCLE_EEPROM_READ ;
-        {CYCLE_EEPROM_READ_VECTH, 3'b0}: cycle <= CYCLE_EEPROM_READ_VECTL;
-        {CYCLE_EEPROM_READ_VECTL, 3'b0}: cycle <= CYCLE_EEPROM_READ_ENDH;
-        {CYCLE_EEPROM_READ_ENDH, 3'b0}: cycle <= CYCLE_EEPROM_READ_ENDL;
-        {CYCLE_EEPROM_READ_ENDL, 3'b0}: cycle <= CYCLE_EEPROM_READ;
-        {CYCLE_EEPROM_READ, 3'b0}: cycle <= (cur_addr >= end_addr && cur_addr != 0) ?  CYCLE_EEPROM_RESET : CYCLE_EEPROM_READ;
-        default: cycle <= cycle;
-      endcase
-
-      auto_scan_cycle <= cycle == CYCLE_EEPROM_RESET;
-
-      cur_addr <= ((cycle == CYCLE_EEPROM_RESET) ||
-      (cycle == CYCLE_EEPROM_SEND_READ) ||
-      (cycle == CYCLE_EEPROM_SEND_ADDRH) ||
-      (cycle == CYCLE_EEPROM_SEND_ADDRL) ||
-        (read_cycle_counter != 0)) ? cur_addr : cur_addr + 1;
-
-      if (timer_enabled) uo_out_reg[TIMER_OUTPUT] <= timer_output;
-
-      if (read_cycle_counter == 0) begin
-        if (cycle == CYCLE_EEPROM_READ_VECTH) begin
-          start_addr[9:8] <= instr[1:0];
-        end else if (cycle == CYCLE_EEPROM_READ_VECTL) begin
-          start_addr[7:0] <= instr[7:0];
-        end else if (cycle == CYCLE_EEPROM_READ_ENDH) begin
-          end_addr[9:8] <= instr[1:0];
-        end else if (cycle == CYCLE_EEPROM_READ_ENDL) begin
-          end_addr[7:0] <= instr;
-        end else if (cycle == CYCLE_EEPROM_READ) begin
+    end else if (instr_ready) begin
           stack[15] <= instr_clr ? 0 : (
                        instr_setall ? 1 : (
                        shift_left_1 ? stack[14] : (
@@ -260,7 +314,7 @@ module tt_um_jimktrains_vslc (
                       shift_left_1 ? 0 : (
                       shift_right_1 ? stack[1] : stack[0]))));
 
-          if (!(timer_enabled && regid == TIMER_OUTPUT)) begin
+          if (!(timer_enabled && regid == timer_reg)) begin
             uo_out_reg[regid] <= !instr_pop_type ? uo_out_reg[regid]: (
               instr_pop ? stack[0] : (
               !stack[0] ? uo_out_reg[regid] : (
@@ -270,42 +324,22 @@ module tt_um_jimktrains_vslc (
 
           timer_set <= should_set_enable_timer;
           timer_reset <= should_reset_enable_timer;
+
           // We need to manually reset the timer output because `timer_output`
           // isn't directly tied to the output because I wanted to be able
           // to read the timer's value as a register.
-          if (timer_enabled && should_reset_enable_timer) uo_out_reg[TIMER_OUTPUT] <= 0;
+          uo_out_reg[timer_reg] <= should_reset_enable_timer ? 0 : (
+                                   timer_enabled ? timer_output :
+                                   uo_out_reg[timer_reg]);
+        end else begin
+          if (timer_enabled) uo_out_reg[timer_reg] <= timer_output;
         end
-      end else begin
-        timer_set <= 0;
-        timer_reset <= 0;
-      end
     end
-  end
-
-  always @(posedge scan_cycle_clk) begin
-    if (!rst_n) begin
-      ui_in_reg <= ui_in;
-      ui_in_prev_reg <= ui_in;
-    end else begin
-      ui_in_reg <= ui_in;
-      ui_in_prev_reg <= ui_in_reg;
-    end
-  end
-
-  always @(posedge clk) begin
-    if (!rst_n) begin
-      instr <= 0;
-
-    end else begin
-      instr[read_cycle_counter] <= cipo;
-    end
-  end
-  localparam TIMER_MODE_CYCLE = 0;
-  localparam TIMER_MODE_ONESHOT = 1;
 endmodule
 
 module timer(
   input clk,
+  input rst_n,
   input [3:0] timer_clock_divisor,
   input [9:0] timer_period_a,
   input [9:0] timer_period_b,
@@ -314,13 +348,10 @@ module timer(
   output timer_enabled,
   output timer_output
 );
-  localparam TIMER_MODE_CYCLE = 0;
-  localparam TIMER_MODE_ONESHOT = 1;
   reg [9:0] timer_clock_counter;
   reg [9:0] timer_counter;
   reg timer_phase;
   reg timer_output_r;
- //  reg timer_enabled_r;
   reg timer_set_prev;
   reg timer_reset_prev;
   reg timer_enabled_r;
@@ -334,6 +365,11 @@ module timer(
   assign timer_enabled = timer_enabled_r;
 
   always @(posedge clk) begin
+    if (!rst_n) begin
+      timer_enabled_r <= 0;
+      timer_clock_counter <= 0;
+      timer_counter <= 0;
+    end else begin
       timer_set_prev <= timer_set;
       timer_reset_prev <= timer_reset;
       timer_enabled_r <= timer_should_set || (timer_enabled_r && !timer_should_reset);
@@ -362,4 +398,5 @@ module timer(
         timer_output_r <= 1'b0;
       end
     end
+  end
 endmodule
