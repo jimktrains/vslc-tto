@@ -221,7 +221,7 @@ module tt_um_jimktrains_vslc (
                        shift_left_1 ? stack[14] : (
                        shift_right_1 ? 0 : stack[15])));
           stack[14:3] <= instr_clr ? 12'b0 : (
-                         instr_setall ? 12'b1 : (
+                         instr_setall ? 12'hFFF : (
                          shift_left_1 ? stack[13:2] : (
                          shift_right_1 ? stack[15:4] : stack[14:3])));
           stack[2] <= instr_clr ? 0 : (
