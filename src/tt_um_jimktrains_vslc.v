@@ -198,13 +198,13 @@ module tt_um_jimktrains_vslc (
 
       auto_scan_cycle <= cycle == CYCLE_EEPROM_RESET;
 
+      cur_addr <= ((cycle == CYCLE_EEPROM_RESET) ||
+      (cycle == CYCLE_EEPROM_SEND_READ) ||
+      (cycle == CYCLE_EEPROM_SEND_ADDRH) ||
+      (cycle == CYCLE_EEPROM_SEND_ADDRL) ||
+        (read_cycle_counter != 0)) ? cur_addr : cur_addr + 1;
 
-      if (cycle == CYCLE_EEPROM_RESET) cur_addr <= start_addr;
-      else if (cycle == CYCLE_EEPROM_SEND_READ) cur_addr <= cur_addr;
-      else if (cycle == CYCLE_EEPROM_SEND_ADDRH) cur_addr <= cur_addr;
-      else if (cycle == CYCLE_EEPROM_SEND_ADDRL) cur_addr <= cur_addr;
-      else if (read_cycle_counter == 0) begin
-        cur_addr <= cur_addr + 1;
+      if (read_cycle_counter == 0) begin
         if (cycle == CYCLE_EEPROM_READ_VECTH) begin
           stack <= stack;
           uo_out_reg[6:0] <= uo_out_reg[6:0];
