@@ -23,44 +23,44 @@ INSTR_FALLING    = lambda reg : 0b11101000 + reg
 INSTR_SWAP = 0b11110010
 INSTR_ROT  = 0b11110011
 
-INSTR_AND     = 0b10100001
-INSTR_NAND    = 0b10101110
-INSTR_OR      = 0b10100111
-INSTR_NOR     = 0b10101000
-INSTR_XOR     = 0b10100110
-INSTR_BICOND  = 0b10101001
-INSTR_IMPL    = 0b10101101
-INSTR_NIMPL   = 0b10100010
-INSTR_CONV    = 0b10101011
-INSTR_NCONV   = 0b10100100
+INSTR_AND     = 0b10010001
+INSTR_NAND    = 0b10011110
+INSTR_OR      = 0b10010111
+INSTR_NOR     = 0b10011000
+INSTR_XOR     = 0b10010110
+INSTR_BICOND  = 0b10011001
+INSTR_IMPL    = 0b10011101
+INSTR_NIMPL   = 0b10010010
+INSTR_CONV    = 0b10011011
+INSTR_NCONV   = 0b10010100
 
-INSTR_DUP     = 0b10001100
-INSTR_OVER    = 0b10001010
-INSTR_DROP    = 0b10101010
+INSTR_DUP     = 0b10111100
+INSTR_OVER    = 0b10111010
+INSTR_DROP    = 0b10011010
 INSTR_ZERO    = 0b10110000
 INSTR_ONE     = 0b10111111
 INSTR_NOT     = 0b10010011
-INSTR_OVERNOT = 0b10100101
+INSTR_OVERNOT = 0b10010101
 
 instr_names = {
-0b10100001: "INSTR_AND",
-0b10101110: "INSTR_NAND",
-0b10100111: "INSTR_OR",
-0b10101000: "INSTR_NOR",
-0b10100110: "INSTR_XOR",
-0b10101001: "INSTR_BICOND",
-0b10101101: "INSTR_IMPL",
-0b10100010: "INSTR_NIMPL",
-0b10101011: "INSTR_CONV",
-0b10100100: "INSTR_NCONV",
+INSTR_AND: "INSTR_AND",
+INSTR_NAND: "INSTR_NAND",
+INSTR_OR: "INSTR_OR",
+INSTR_NOR: "INSTR_NOR",
+INSTR_XOR: "INSTR_XOR",
+INSTR_BICOND: "INSTR_BICOND",
+INSTR_IMPL: "INSTR_IMPL",
+INSTR_NIMPL: "INSTR_NIMPL",
+INSTR_CONV: "INSTR_CONV",
+INSTR_NCONV: "INSTR_NCONV",
 
-0b10011010: "INSTR_NOT",
-0b10000101: "INSTR_DUP",
-0b10000011: "INSTR_OVER",
-0b10100101: "INSTR_DROP",
-0b10101010: "INSTR_OVERNOT",
-0b10110000: "INSTR_ZERO",
-0b10111111: "INSTR_ONE",
+INSTR_NOT: "INSTR_NOT",
+INSTR_DUP: "INSTR_DUP",
+INSTR_OVER: "INSTR_OVER",
+INSTR_DROP: "INSTR_DROP",
+INSTR_OVERNOT: "INSTR_OVERNOT",
+INSTR_ZERO: "INSTR_ZERO",
+INSTR_ONE: "INSTR_ONE",
 }
 
 # These silly little functions just make debugging easier when it's
@@ -122,9 +122,10 @@ def generate_test(instr):
         r <<= 1
         r |= b
 
-        if (instr & 0b00100000):
+
+        if (instr & 0b00110000) == 16:
             r >>= 2
-        elif (instr & 0b00010000):
+        elif (instr & 0b00110000) == 0:
             r >>= 1
         r <<= 1
         r |= expected_result
@@ -166,8 +167,7 @@ CYCLE_START = 7;
 EEPROM_COPI = 0;
 EEPROM_CIPO = 1;
 EEPROM_CS = 2;
-#STACK_OUTPUT2 = 4;
-STACK_OUTPUT = 5;
+STACK_OUTPUT = 3;
 TOS_OUPUT = 6;
 TIMER_OUTPUT = 7;
 
@@ -176,8 +176,10 @@ msg = lambda m : (m, None)
 
 def test_stack(expected):
     def y(dut, stack):
+        if stack != expected:
+            dut._log.info(f"expected stack={expected:08b}")
+            return False
         return True
-        return stack == expected
     return y
 
 def pop_test(expected):
@@ -214,9 +216,17 @@ MEMORY = [
     push_false,
     push_true,
     push_true,
-    (INSTR_NOP, test_stack(0b00001011)),
+    push_true,
+    push_false,
+    push_true,
+    push_true,
+    (INSTR_NOP, test_stack(0b10111011)),
 
     msg("Test Pop"),
+    pop_test(True),
+    pop_test(True),
+    pop_test(False),
+    pop_test(True),
     pop_test(True),
     pop_test(True),
     pop_test(False),
@@ -338,14 +348,13 @@ async def write8(dut, v):
         x |= ((i > 5) and (i < 7)) << CYCLE_START
         dut.uio_in.value = x
         await ClockCycles(dut.clk, 1, rising=False)
-        #if i < 7 and i > 2:
-        #    s1 = (((dut.uio_out.value[7-STACK_OUTPUT]) & 0x01) << (((7-i)-1)*2 + 1)) & 0xff
-        #    s2 = (((dut.uio_out.value[7-STACK_OUTPUT2]) & 0x01) << (((7-i)-1)*2)) & 0xff
+        rs += (dut.uio_out.value[7-STACK_OUTPUT] << i)
 
             #rs += s1 + s2
     # rs += (((dut.uio_out.value[7-TOS_OUPUT]) & 0x01) << 0) & 0xff
     # rs += (((dut.uio_out.value[7-STACK_OUTPUT2]) & 0x01) << 1) & 0xff
     return rs
+
 
 @cocotb.test()
 async def test_project(dut):
