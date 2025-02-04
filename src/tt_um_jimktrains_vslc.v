@@ -249,6 +249,9 @@ module tt_um_jimktrains_vslc (
           end
 
           timer_enabled <= should_set_enable_timer ? 1 : (should_reset_enable_timer ? 0 : timer_enabled);
+          // We need to manually reset the timer output because `timer_output`
+          // isn't directly tied to the output because I wanted to be able
+          // to read the timer's value as a register.
           if (timer_enabled && should_reset_enable_timer) uo_out_reg[TIMER_OUTPUT] <= 0;
         end
       end
