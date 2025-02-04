@@ -17,6 +17,8 @@ module tt_um_jimktrains_vslc (
   input  wire       rst_n    // reset_n - low to reset
 );
 
+  wire _unused = ena;
+
   localparam SPI_COPI    = 0;
   localparam SPI_CIPO    = 1;
   localparam EEPROM_CS   = 2;
@@ -88,7 +90,7 @@ module tt_um_jimktrains_vslc (
   wire hos = stack[2];
 
   wire instr_reg_a = instr[7:6] == 0;
-  wire instr_reg_b = instr[7:6] == 1;
+  // wire instr_reg_b = instr[7:6] == 1;
   wire instr_logic = instr[7:6] == 2;
   wire instr_other = instr[7:6] == 3;
 
