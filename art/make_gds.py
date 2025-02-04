@@ -17,16 +17,16 @@ GDS_NAME = "my_logo.gds"
 BOUNDARY_LAYERS = [
     (235, 4), # prBndry, boundary
     (62, 24), # cmm1, waffle-drop
-    (105, 52), # cmm2, waffle-drop
-    (107, 24), # cmm3, waffle-drop
-    (112, 4), # cmm4, waffle-drop
-    (117, 4), # cmm5, waffle-drop
+    # (105, 52), # cmm2, waffle-drop
+    # (107, 24), # cmm3, waffle-drop
+    # (112, 4), # cmm4, waffle-drop
+    # (117, 4), # cmm5, waffle-drop
 ]
 PIXEL_LAYERS = [
     (68, 20), # met1, drawing
     (69, 20), # met2, drawing
-    # (70, 20), # met3, drawing
-    # (71, 20), # met4, drawing
+    (70, 20), # met3, drawing
+    (71, 20), # met4, drawing
 ]
 PIXEL_SIZE = 0.28 # um
 VERBOSITY = 1
