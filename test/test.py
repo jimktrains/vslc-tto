@@ -66,10 +66,10 @@ INSTR_ONE: "INSTR_ONE",
 # These silly little functions just make debugging easier when it's
 # just printing the function name.
 def assert_timer_high(dut, stack):
-    return ((dut.uo_out.value[7-TIMER_OUTPUT]) & 0x1) == 1
+    return ((dut.uo_out.value>>(TIMER_OUTPUT)) & 0x1) == 1
 
 def assert_timer_low(dut, stack):
-    return ((dut.uo_out.value[7-TIMER_OUTPUT]) & 0x1) == 0
+    return ((dut.uo_out.value>>(TIMER_OUTPUT)) & 0x1) == 0
 
 def assert_tos(x):
     def y(dut, stack):
@@ -142,11 +142,10 @@ def generate_timer_test():
         ("Enable Timer", None),
         (INSTR_SET_TIMER,    None ),
         ("Check High", None),
+        (INSTR_NOP,          None ),
         (INSTR_NOP, assert_timer_high),
         ("Check Low", None),
         (INSTR_NOP, assert_timer_low),
-        (INSTR_NOP,          None ),
-        (INSTR_NOP,          None ),
         ("Disable Timer", None),
         push_false,
         (INSTR_POP_TIMER,    None ),

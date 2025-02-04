@@ -16,7 +16,24 @@ module tt_um_jimktrains_vslc (
   input  wire       clk,      // clock
   input  wire       rst_n    // reset_n - low to reset
 );
+  reg [3:0] timer_clock_divisor;
+  reg [9:0] timer_period_a;
+  reg [9:0] timer_period_b;
+  reg timer_set;
+  reg timer_reset;
+  wire timer_enabled;
+  wire timer_output;
 
+  timer tim0(
+    clk,
+    timer_clock_divisor,
+    timer_period_a,
+    timer_period_b,
+    timer_set,
+    timer_reset,
+    timer_enabled,
+    timer_output
+  );
   wire _unused = ena;
 
   localparam SPI_COPI    = 0;
@@ -62,8 +79,6 @@ module tt_um_jimktrains_vslc (
 
   assign uo_out = uo_out_reg;
 
-
-  reg timer_enabled;
 
   reg [7:0]instr;
   // reg [7:1]instr_buf;
@@ -171,12 +186,15 @@ module tt_um_jimktrains_vslc (
       end_addr <= 0;
       cur_addr <= 0;
       uo_out_reg <= 0;
-      timer_reset();
       stack <= 16'b0;
       copi <= 0;
       cycle <= CYCLE_EEPROM_RESET;
+      timer_clock_divisor <= 0;
+      timer_period_a <= 2;
+      timer_period_b <= 3;
+      timer_set <= 0;
+      timer_reset <= 1;
     end else begin
-      timer_update();
 
       copi <= (cycle == CYCLE_EEPROM_RESET) ? EEPROM_READ_INSTR[7] : (
               (cycle == CYCLE_EEPROM_SEND_READ) ? EEPROM_READ_INSTR[cycle_counter] : (
@@ -250,12 +268,16 @@ module tt_um_jimktrains_vslc (
               instr_reset ? 0 : uo_out_reg[regid]))));
           end
 
-          timer_enabled <= should_set_enable_timer ? 1 : (should_reset_enable_timer ? 0 : timer_enabled);
+          timer_set <= should_set_enable_timer;
+          timer_reset <= should_reset_enable_timer;
           // We need to manually reset the timer output because `timer_output`
           // isn't directly tied to the output because I wanted to be able
           // to read the timer's value as a register.
           if (timer_enabled && should_reset_enable_timer) uo_out_reg[TIMER_OUTPUT] <= 0;
         end
+      end else begin
+        timer_set <= 0;
+        timer_reset <= 0;
       end
     end
   end
@@ -273,72 +295,71 @@ module tt_um_jimktrains_vslc (
   always @(posedge clk) begin
     if (!rst_n) begin
       instr <= 0;
+
     end else begin
       instr[read_cycle_counter] <= cipo;
     end
   end
-
-
-
-
   localparam TIMER_MODE_CYCLE = 0;
   localparam TIMER_MODE_ONESHOT = 1;
+endmodule
 
-  reg [3:0] timer_clock_divisor;
+module timer(
+  input clk,
+  input [3:0] timer_clock_divisor,
+  input [9:0] timer_period_a,
+  input [9:0] timer_period_b,
+  input timer_set,
+  input timer_reset,
+  output timer_enabled,
+  output timer_output
+);
+  localparam TIMER_MODE_CYCLE = 0;
+  localparam TIMER_MODE_ONESHOT = 1;
   reg [9:0] timer_clock_counter;
   reg [9:0] timer_counter;
-  reg [9:0] timer_period_a;
-  reg [9:0] timer_period_b;
   reg timer_phase;
-  reg timer_mode;
-  reg timer_output;
+  reg timer_output_r;
+ //  reg timer_enabled_r;
+  reg timer_set_prev;
+  reg timer_reset_prev;
+  reg timer_enabled_r;
 
-  task timer_update();
-    begin
+  wire timer_should_set;
+  wire timer_should_reset;
+
+  assign timer_output = timer_output_r;
+  assign timer_should_set = (timer_set && !timer_set_prev);
+  assign timer_should_reset = (timer_reset && !timer_reset_prev);
+  assign timer_enabled = timer_enabled_r;
+
+  always @(posedge clk) begin
+      timer_set_prev <= timer_set;
+      timer_reset_prev <= timer_reset;
+      timer_enabled_r <= timer_should_set || (timer_enabled_r && !timer_should_reset);
+
       if (timer_enabled) begin
         if (timer_clock_counter[timer_clock_divisor] == 1'b1) begin
           timer_clock_counter <= 0;
           if (timer_phase == 1'b0 && timer_counter == timer_period_a) begin
             timer_counter <= 10'b0;
             timer_phase <= 1'b1;
-            timer_enabled <= timer_enabled;
-            timer_output <= ~timer_output;
+            timer_output_r <= ~timer_output_r;
           end else if (timer_phase == 1'b1 && timer_counter == timer_period_b) begin
             timer_counter <= 10'b0;
             timer_phase <= 1'b0;
-            timer_enabled <= timer_mode == TIMER_MODE_CYCLE;
-            timer_output <= timer_period_b == 0 ? timer_output : ~timer_output;
+            timer_output_r <= timer_period_b == 0 ? timer_output : ~timer_output;
           end else begin
             timer_counter <= timer_counter + 1;
-            timer_phase <= timer_phase;
-            timer_enabled <= timer_enabled;
-            timer_output <= timer_output;
           end
         end else begin
-          timer_phase <= timer_phase;
-          timer_enabled <= timer_enabled;
-          timer_counter <= timer_counter;
           timer_clock_counter <= timer_clock_counter + 1;
-          timer_output <= timer_output;
         end
       end else begin
-        timer_reset();
+        timer_clock_counter <= 10'b0;
+        timer_counter <= 10'b0;
+        timer_phase <= 1'b0;
+        timer_output_r <= 1'b0;
       end
     end
-  endtask
-
-  task timer_reset();
-    begin
-      timer_clock_counter <= 10'b0;
-      timer_clock_divisor <= 4'b0000;
-      timer_counter <= 10'b0;
-      timer_period_a <= 10'b1;
-      timer_period_b <= 10'h2;
-      timer_enabled <= 1'b0;
-      timer_phase <= 1'b0;
-      timer_mode <= 1'b0;
-      timer_output <= 1'b0;
-    end
-  endtask
-
 endmodule
