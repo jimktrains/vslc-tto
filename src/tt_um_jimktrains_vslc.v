@@ -16,9 +16,32 @@ module tt_um_jimktrains_vslc (
   input  wire       clk,      // clock
   input  wire       rst_n    // reset_n - low to reset
 );
-  wire instr_ready;
+  reg instr_ready;
   wire [15:0]stack;
-  assign instr_ready = (!rst_n && clk) || (cycle == CYCLE_EEPROM_READ && read_cycle_counter == 0);
+
+  reg [7:0] instr;
+  wire [7:0] eeprom_read_buf;
+  wire [15:0] eeprom_addr_read;
+  wire eeprom_read_ready;
+
+  reg eeprom_restart_read;
+
+  wire ecsn;
+  assign uio_out[EEPROM_CS] = ecsn;
+
+  eeprom_reader eereader(
+    clk,
+    rst_n,
+    eeprom_restart_read,
+    eeprom_start_addr,
+    cipo,
+    copi,
+    ecsn,
+    eeprom_read_ready,
+    eeprom_read_buf,
+    eeprom_addr_read
+  );
+
 
   executor exec(
     clk,
@@ -31,8 +54,11 @@ module tt_um_jimktrains_vslc (
     uo_out,
     stack
   );
+
+
   wire _unused = ena;
 
+  // uio_out
   localparam SPI_COPI              = 3'h0;
   localparam SPI_CIPO              = 3'h1;
   localparam EEPROM_CS             = 3'h2;
@@ -41,14 +67,13 @@ module tt_um_jimktrains_vslc (
   localparam IO_OUT_5              = 3'h5;
   localparam TOS_OUT               = 3'h6;
   localparam SCAN_CYCLE_TRIGGER_IN = 3'h7;
+
+  // uo_out
   localparam TIMER_OUTPUT          = 3'h7;
 
-  reg copi;
+  wire copi;
   wire cipo;
-  wire eeprom_reset;
   wire scan_cycle_trigger_in;
-
-  assign eeprom_reset = cycle == CYCLE_EEPROM_RESET;
 
   assign uio_oe[SPI_COPI]  = 1;
   assign uio_oe[SPI_CIPO]  = 0;
@@ -62,8 +87,9 @@ module tt_um_jimktrains_vslc (
   assign cipo = uio_in[SPI_CIPO];
   assign uio_out[SPI_COPI] = copi;
   assign uio_out[SPI_CIPO] = 0;
-  assign uio_out[EEPROM_CS] = eeprom_reset;
-  assign uio_out[STACK_OUT] = stack[{1'b0, 3'h7 - (cycle_counter + 3'h1)}];
+  // assign uio_out[EEPROM_CS] = eeprom_cs_n;
+  // assign uio_out[STACK_OUT] = stack[{1'b0, 3'h7 - (cycle_counter + 3'h1)}];
+  assign uio_out[STACK_OUT] = 0; // FIX ME!
   assign uio_out[IO_OUT_4]  = 0;
   assign uio_out[IO_OUT_5]  = 0;
   assign uio_out[TOS_OUT]  = stack[0];
@@ -74,89 +100,37 @@ module tt_um_jimktrains_vslc (
   reg [7:0]ui_in_prev_reg;
 
 
-  reg [7:0]instr;
   // reg [7:1]instr_buf;
   // wire [7:0]instr = {instr_buf, cipo};
 
-  localparam CYCLE_EEPROM_RESET = 4'h0;
-  localparam CYCLE_EEPROM_SEND_READ = 4'h1;
-  localparam CYCLE_EEPROM_SEND_ADDRH = 4'h2;
-  localparam CYCLE_EEPROM_SEND_ADDRL = 4'h3;
-  localparam CYCLE_EEPROM_READ_VECTH = 4'h4;
-  localparam CYCLE_EEPROM_READ_VECTL = 4'h5;
-  localparam CYCLE_EEPROM_READ_ENDH = 4'h6;
-  localparam CYCLE_EEPROM_READ_ENDL = 4'h7;
-  localparam CYCLE_EEPROM_READ = 4'h8;
-
-  reg [3:0]cycle;
-  reg [2:0]cycle_counter;
-  wire [2:0]read_cycle_counter;
-  assign read_cycle_counter = cycle_counter + 1;
-
-
-  localparam EEPROM_READ_INSTR = 8'b00000011;
-
   reg [9:0]start_addr;
+  reg [9:0]start_addr_temp;
+  wire [15:0] eeprom_start_addr = {6'b0, start_addr};
   reg [9:0]end_addr;
-  reg [9:0]cur_addr;
 
-  wire [7:0]start_addr_h;
-  wire [7:0]start_addr_l;
-  assign start_addr_h = {6'b0, start_addr[9:8]};
-  assign start_addr_l = start_addr[7:0];
+  wire auto_scan_cycle;
+  assign auto_scan_cycle = eeprom_restart_read;
 
-  reg auto_scan_cycle;
-  wire scan_cycle_clk = auto_scan_cycle || scan_cycle_trigger_in;
+  wire scan_cycle_clk;
+  assign scan_cycle_clk = auto_scan_cycle || scan_cycle_trigger_in;
 
   always @(negedge clk) begin
     if (!rst_n) begin
-      cycle_counter <= 7;
       start_addr <= 0;
       end_addr <= 0;
-      cur_addr <= 0;
-      copi <= 0;
-      cycle <= CYCLE_EEPROM_RESET;
+      eeprom_restart_read <= 0;
     end else begin
+      if (eeprom_read_ready) begin
+        start_addr_temp[9:8] <= (eeprom_addr_read == 0) ? eeprom_read_buf[1:0] : start_addr_temp[9:8];
+        start_addr_temp[7:0] <= (eeprom_addr_read == 1) ? eeprom_read_buf : start_addr_temp[7:0];
+        end_addr[9:8] <= (eeprom_addr_read == 2) ? eeprom_read_buf[1:0] : end_addr[9:8];
+        end_addr[7:0] <= (eeprom_addr_read == 3) ? eeprom_read_buf : end_addr[7:0];
 
-      copi <= (cycle == CYCLE_EEPROM_RESET) ? EEPROM_READ_INSTR[7] : (
-              (cycle == CYCLE_EEPROM_SEND_READ) ? EEPROM_READ_INSTR[cycle_counter] : (
-              (cycle == CYCLE_EEPROM_SEND_ADDRH ? start_addr_h[cycle_counter] :
-              (cycle == CYCLE_EEPROM_SEND_ADDRL ? start_addr_l[cycle_counter] : 0))));
-
-      cycle_counter <= (cycle == CYCLE_EEPROM_RESET) ? 6 : (cycle_counter - 1);
-
-      casez ({cycle, read_cycle_counter})
-        {CYCLE_EEPROM_RESET, 3'b?}: cycle <= CYCLE_EEPROM_SEND_READ;
-        {CYCLE_EEPROM_SEND_READ, 3'b0}: cycle <= CYCLE_EEPROM_SEND_ADDRH;
-        {CYCLE_EEPROM_SEND_ADDRH, 3'b0}: cycle <= CYCLE_EEPROM_SEND_ADDRL;
-        {CYCLE_EEPROM_SEND_ADDRL, 3'b0}: cycle <= (start_addr == 0) ? CYCLE_EEPROM_READ_VECTH : CYCLE_EEPROM_READ ;
-        {CYCLE_EEPROM_READ_VECTH, 3'b0}: cycle <= CYCLE_EEPROM_READ_VECTL;
-        {CYCLE_EEPROM_READ_VECTL, 3'b0}: cycle <= CYCLE_EEPROM_READ_ENDH;
-        {CYCLE_EEPROM_READ_ENDH, 3'b0}: cycle <= CYCLE_EEPROM_READ_ENDL;
-        {CYCLE_EEPROM_READ_ENDL, 3'b0}: cycle <= CYCLE_EEPROM_READ;
-        {CYCLE_EEPROM_READ, 3'b0}: cycle <= (cur_addr >= end_addr && cur_addr != 0) ?  CYCLE_EEPROM_RESET : CYCLE_EEPROM_READ;
-        default: cycle <= cycle;
-      endcase
-
-      auto_scan_cycle <= cycle == CYCLE_EEPROM_RESET;
-
-      cur_addr <= ((cycle == CYCLE_EEPROM_RESET) ||
-      (cycle == CYCLE_EEPROM_SEND_READ) ||
-      (cycle == CYCLE_EEPROM_SEND_ADDRH) ||
-      (cycle == CYCLE_EEPROM_SEND_ADDRL) ||
-        (read_cycle_counter != 0)) ? cur_addr : cur_addr + 1;
-
-      if (read_cycle_counter == 0) begin
-        if (cycle == CYCLE_EEPROM_READ_VECTH) begin
-          start_addr[9:8] <= instr[1:0];
-        end else if (cycle == CYCLE_EEPROM_READ_VECTL) begin
-          start_addr[7:0] <= instr[7:0];
-        end else if (cycle == CYCLE_EEPROM_READ_ENDH) begin
-          end_addr[9:8] <= instr[1:0];
-        end else if (cycle == CYCLE_EEPROM_READ_ENDL) begin
-          end_addr[7:0] <= instr;
-        end
+        start_addr <= (eeprom_addr_read == 4) ? start_addr_temp : start_addr;
+        instr <= eeprom_read_buf;
+        eeprom_restart_read <= end_addr != 10'b0 && eeprom_addr_read >= {6'b0, end_addr};
       end
+      instr_ready <= eeprom_read_ready && (eeprom_addr_read > 3);
     end
   end
 
@@ -169,13 +143,79 @@ module tt_um_jimktrains_vslc (
       ui_in_prev_reg <= ui_in_reg;
     end
   end
+endmodule
 
+module eeprom_reader(
+  input clk,
+  input rst_n,
+  input goto_address,
+  input [15:0]address,
+  input cipo,
+  output copi,
+  output chip_select_n,
+  output read_ready,
+  output [7:0]byte_read,
+  output [15:0]address_read
+);
+  reg goto_addr_prev;
+  reg [3:0]bit_counter;
+  reg [7:0]read_buf;
+  reg [7:0]just_read_buf;
+
+  assign byte_read = read_buf;
+  assign read_ready = bit_counter == 0 && comm_state == COMM_READ;
+  reg [15:0]address_just_read;
+  reg [15:0]address_reading;
+
+  assign address_read = address_just_read;
+
+  assign copi = comm_state == COMM_INSTR ? EEPROM_READ_INSTR[bit_counter[2:0]] : address[bit_counter];
+  assign chip_select_n = comm_state == COMM_RESET;
+
+  localparam EEPROM_READ_INSTR = 8'b00000011;
+
+  reg [2:0]comm_state;
+  localparam COMM_RESET = 3'h0;
+  localparam COMM_INSTR = 3'h1;
+  localparam COMM_ADDR  = 3'h2;
+  localparam COMM_READ  = 3'h3;
+
+
+  always @(negedge clk) begin
+    if (!rst_n) begin
+      comm_state <= COMM_RESET;
+      goto_addr_prev <= 0;
+      bit_counter <= 7;
+    end else begin
+      if (!goto_addr_prev && goto_address) {comm_state, bit_counter} <= {COMM_RESET, 4'h7};
+      else
+        casez ({comm_state, bit_counter})
+          {COMM_RESET, 4'b?}: {comm_state, bit_counter} <= {COMM_INSTR, 4'h7};
+          {COMM_INSTR, 4'b0}: {comm_state, bit_counter} <= {COMM_ADDR, 4'hF};
+          {COMM_ADDR, 4'b0}: {comm_state, bit_counter} <= {COMM_READ, 4'h7};
+          {COMM_READ, 4'b0}: {comm_state, bit_counter} <= {COMM_READ, 4'h7};
+          default: {comm_state, bit_counter}  <= {comm_state, bit_counter - 4'b1};
+        endcase
+
+      goto_addr_prev <= goto_address;
+    end
+  end
   always @(posedge clk) begin
     if (!rst_n) begin
-      instr <= 0;
-
+      read_buf <= 0;
+      address_reading <= address;
+      address_just_read <= 0;
+      just_read_buf <= 0;
     end else begin
-      instr[read_cycle_counter] <= cipo;
+      if (comm_state == COMM_RESET) read_buf <= 0;
+      else read_buf[bit_counter[2:0]] <= cipo;
+
+      just_read_buf <= read_ready ? {read_buf[7:1], cipo} : just_read_buf;
+
+      address_just_read <= read_ready ? address_reading : address_just_read;
+      address_reading <= (comm_state == COMM_READ && bit_counter == 7) ? address_reading + 1 : (
+                         comm_state == COMM_ADDR ? address - 1 : (
+                         address_reading));
     end
   end
 endmodule

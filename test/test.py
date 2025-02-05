@@ -473,7 +473,9 @@ async def test_addressing(dut):
     dut.rst_n.value = 1
     dut._log.info(f"Reset Done")
     dut._log.info(f"Reading READ Command")
-    assert (await read8(dut)) == EEPROM_READ_COMMAND
+    x = await read8(dut)
+    dut._log.info(f"Read {x=:08b}")
+    assert x == EEPROM_READ_COMMAND
     assert not dut.uio_out.value[7-EEPROM_CS]
     dut._log.info(f"Reading Address")
     assert (await read8(dut)) == 0
@@ -489,11 +491,13 @@ async def test_addressing(dut):
     await write8(dut, MEMORY[6])
     dut._log.info(f"Got to the end of the program")
     await ClockCycles(dut.clk, 1)
+    await ClockCycles(dut.clk, 1)
     assert not dut.uo_out.value[7-0]
 
     dut._log.info(f"Reading READ Command")
-    assert (await read8(dut)) == EEPROM_READ_COMMAND
-    assert not dut.uio_out.value[7-EEPROM_CS]
+    x = await read8(dut)
+    dut._log.info(f"Read {x=:08b}")
+    assert x == EEPROM_READ_COMMAND
     assert not dut.uio_out.value[7-EEPROM_CS]
     dut._log.info(f"Reading Address")
     assert (await read8(dut)) == 0
