@@ -28,6 +28,7 @@ module tt_um_jimktrains_vslc (
 
   wire ecsn;
   assign uio_out[EEPROM_CS] = ecsn;
+  wire [3:0]bit_counter;
 
   eeprom_reader eereader(
     clk,
@@ -39,7 +40,8 @@ module tt_um_jimktrains_vslc (
     ecsn,
     eeprom_read_ready,
     eeprom_read_buf,
-    eeprom_addr_read
+    eeprom_addr_read,
+    bit_counter
   );
 
 
@@ -88,8 +90,9 @@ module tt_um_jimktrains_vslc (
   assign uio_out[SPI_COPI] = copi;
   assign uio_out[SPI_CIPO] = 0;
   // assign uio_out[EEPROM_CS] = eeprom_cs_n;
-  // assign uio_out[STACK_OUT] = stack[{1'b0, 3'h7 - (cycle_counter + 3'h1)}];
-  assign uio_out[STACK_OUT] = 0; // FIX ME!
+  wire [3:0]stack_out_bit_idx;
+  assign stack_out_bit_idx = {1'b0, 3'h7 - (bit_counter[2:0] + 3'h1)};
+  assign uio_out[STACK_OUT] = stack[stack_out_bit_idx];
   assign uio_out[IO_OUT_4]  = 0;
   assign uio_out[IO_OUT_5]  = 0;
   assign uio_out[TOS_OUT]  = stack[0];
@@ -104,7 +107,6 @@ module tt_um_jimktrains_vslc (
   // wire [7:0]instr = {instr_buf, cipo};
 
   reg [9:0]start_addr;
-  reg [9:0]start_addr_temp;
   wire [15:0] eeprom_start_addr = {6'b0, start_addr};
   reg [9:0]end_addr;
 
@@ -119,14 +121,15 @@ module tt_um_jimktrains_vslc (
       start_addr <= 0;
       end_addr <= 0;
       eeprom_restart_read <= 0;
+      instr <= 8'hff;
+      instr_ready <= 0;
     end else begin
       if (eeprom_read_ready) begin
-        start_addr_temp[9:8] <= (eeprom_addr_read == 0) ? eeprom_read_buf[1:0] : start_addr_temp[9:8];
-        start_addr_temp[7:0] <= (eeprom_addr_read == 1) ? eeprom_read_buf : start_addr_temp[7:0];
+        start_addr[9:8] <= (eeprom_addr_read == 0) ? eeprom_read_buf[1:0] : start_addr[9:8];
+        start_addr[7:0] <= (eeprom_addr_read == 1) ? eeprom_read_buf : start_addr[7:0];
         end_addr[9:8] <= (eeprom_addr_read == 2) ? eeprom_read_buf[1:0] : end_addr[9:8];
         end_addr[7:0] <= (eeprom_addr_read == 3) ? eeprom_read_buf : end_addr[7:0];
 
-        start_addr <= (eeprom_addr_read == 4) ? start_addr_temp : start_addr;
         instr <= eeprom_read_buf;
         eeprom_restart_read <= end_addr != 10'b0 && eeprom_addr_read >= {6'b0, end_addr};
       end
@@ -155,19 +158,20 @@ module eeprom_reader(
   output chip_select_n,
   output read_ready,
   output [7:0]byte_read,
-  output [15:0]address_read
+  output [15:0]address_read,
+  output [3:0]bitc
 );
   reg goto_addr_prev;
   reg [3:0]bit_counter;
   reg [7:0]read_buf;
-  reg [7:0]just_read_buf;
+
+  assign bitc = bit_counter;
 
   assign byte_read = read_buf;
   assign read_ready = bit_counter == 0 && comm_state == COMM_READ;
-  reg [15:0]address_just_read;
   reg [15:0]address_reading;
 
-  assign address_read = address_just_read;
+  assign address_read = address_reading;
 
   assign copi = comm_state == COMM_INSTR ? EEPROM_READ_INSTR[bit_counter[2:0]] : address[bit_counter];
   assign chip_select_n = comm_state == COMM_RESET;
@@ -204,15 +208,10 @@ module eeprom_reader(
     if (!rst_n) begin
       read_buf <= 0;
       address_reading <= address;
-      address_just_read <= 0;
-      just_read_buf <= 0;
     end else begin
       if (comm_state == COMM_RESET) read_buf <= 0;
       else read_buf[bit_counter[2:0]] <= cipo;
 
-      just_read_buf <= read_ready ? {read_buf[7:1], cipo} : just_read_buf;
-
-      address_just_read <= read_ready ? address_reading : address_just_read;
       address_reading <= (comm_state == COMM_READ && bit_counter == 7) ? address_reading + 1 : (
                          comm_state == COMM_ADDR ? address - 1 : (
                          address_reading));
