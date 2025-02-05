@@ -16,10 +16,9 @@ module tt_um_jimktrains_vslc (
   input  wire       clk,      // clock
   input  wire       rst_n    // reset_n - low to reset
 );
-  reg instr_ready;
+  wire instr_ready;
   wire [15:0]stack;
 
-  reg [7:0] instr;
   wire [7:0] eeprom_read_buf;
   wire [15:0] eeprom_addr_read;
   wire eeprom_read_ready;
@@ -49,7 +48,7 @@ module tt_um_jimktrains_vslc (
     clk,
     instr_ready,
     rst_n,
-    instr,
+    eeprom_read_buf,
     ui_in_reg,
     ui_in_prev_reg,
     TIMER_OUTPUT,
@@ -91,8 +90,10 @@ module tt_um_jimktrains_vslc (
   assign uio_out[SPI_CIPO] = 0;
   // assign uio_out[EEPROM_CS] = eeprom_cs_n;
   wire [3:0]stack_out_bit_idx;
-  assign stack_out_bit_idx = {1'b0, 3'h7 - (bit_counter[2:0] + 3'h1)};
-  assign uio_out[STACK_OUT] = stack[stack_out_bit_idx];
+  assign stack_out_bit_idx = {1'b0, 3'h7 - (bit_counter[2:0])};
+  wire stack_out_bit;
+  assign stack_out_bit = stack[stack_out_bit_idx];
+  assign uio_out[STACK_OUT] = stack_out_bit;
   assign uio_out[IO_OUT_4]  = 0;
   assign uio_out[IO_OUT_5]  = 0;
   assign uio_out[TOS_OUT]  = stack[0];
@@ -116,13 +117,13 @@ module tt_um_jimktrains_vslc (
   wire scan_cycle_clk;
   assign scan_cycle_clk = auto_scan_cycle || scan_cycle_trigger_in;
 
+  assign instr_ready = eeprom_read_ready && (eeprom_addr_read > 3);
+
   always @(negedge clk) begin
     if (!rst_n) begin
       start_addr <= 0;
       end_addr <= 0;
       eeprom_restart_read <= 0;
-      instr <= 8'hff;
-      instr_ready <= 0;
     end else begin
       if (eeprom_read_ready) begin
         start_addr[9:8] <= (eeprom_addr_read == 0) ? eeprom_read_buf[1:0] : start_addr[9:8];
@@ -130,10 +131,8 @@ module tt_um_jimktrains_vslc (
         end_addr[9:8] <= (eeprom_addr_read == 2) ? eeprom_read_buf[1:0] : end_addr[9:8];
         end_addr[7:0] <= (eeprom_addr_read == 3) ? eeprom_read_buf : end_addr[7:0];
 
-        instr <= eeprom_read_buf;
         eeprom_restart_read <= end_addr != 10'b0 && eeprom_addr_read >= {6'b0, end_addr};
       end
-      instr_ready <= eeprom_read_ready && (eeprom_addr_read > 3);
     end
   end
 
