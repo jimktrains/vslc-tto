@@ -29,9 +29,13 @@ module tt_um_jimktrains_vslc (
   assign uio_out[EEPROM_CS] = ecsn;
   wire [3:0]bit_counter;
 
+  reg rst_n_sync_reg;
+  wire rst_n_sync;
+  assign rst_n_sync = rst_n_sync_reg;
+
   eeprom_reader eereader(
     clk,
-    rst_n,
+    rst_n_sync,
     eeprom_restart_read,
     eeprom_start_addr,
     cipo,
@@ -47,7 +51,7 @@ module tt_um_jimktrains_vslc (
   executor exec(
     clk,
     instr_ready,
-    rst_n,
+    rst_n_sync,
     eeprom_read_buf,
     ui_in_reg,
     ui_in_prev_reg,
@@ -120,7 +124,8 @@ module tt_um_jimktrains_vslc (
   assign instr_ready = eeprom_read_ready && (eeprom_addr_read > 3);
 
   always @(negedge clk) begin
-    if (!rst_n) begin
+    rst_n_sync_reg <= rst_n;
+    if (!rst_n_sync) begin
       start_addr <= 0;
       end_addr <= 0;
       eeprom_restart_read <= 0;
@@ -137,7 +142,7 @@ module tt_um_jimktrains_vslc (
   end
 
   always @(posedge scan_cycle_clk) begin
-    if (!rst_n) begin
+    if (!rst_n_sync) begin
       ui_in_reg <= ui_in;
       ui_in_prev_reg <= ui_in;
     end else begin

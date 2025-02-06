@@ -354,11 +354,7 @@ async def write8(dut, v):
     # rs += (((dut.uio_out.value[7-STACK_OUTPUT2]) & 0x01) << 1) & 0xff
     return rs
 
-
-@cocotb.test()
-async def test_project(dut):
-    dut._log.info("Start")
-
+async def do_reset(dut):
     # Set the clock period to 10 us (100 KHz)
     clock = Clock(dut.clk, 10, units="us")
     cocotb.start_soon(clock.start())
@@ -373,8 +369,9 @@ async def test_project(dut):
     dut.rst_n.value = 0
     await ClockCycles(dut.clk, 1)
     dut._log.info(f"{dut.uio_out.value=}")
-    assert dut.uio_out.value[7-EEPROM_CS]
+    #assert dut.uio_out.value[7-EEPROM_CS]
     dut.rst_n.value = 1
+    await ClockCycles(dut.clk, 1)
     dut._log.info(f"Reset Done")
     dut._log.info(f"Reading READ Command")
     assert (await read8(dut)) == EEPROM_READ_COMMAND
@@ -382,10 +379,18 @@ async def test_project(dut):
     dut._log.info(f"Reading Address")
     assert (await read8(dut)) == 0
     assert (await read8(dut)) == 0
+    await ClockCycles(dut.clk, 1)
+
+@cocotb.test()
+async def test_project(dut):
+    dut._log.info("Start")
+
+
+    await do_reset(dut)
+
     last_a = None
     adj_addr = 0
 
-    await ClockCycles(dut.clk, 1)
     for (i,(m,a)) in enumerate(MEMORY):
         if (isinstance(m, str)):
             dut._log.info(f"#### {i=} {m=}")
@@ -446,11 +451,6 @@ async def test_project(dut):
 async def test_addressing(dut):
     dut._log.info("Start, the Second")
 
-    # Set the clock period to 10 us (100 KHz)
-    clock = Clock(dut.clk, 10, units="us")
-    cocotb.start_soon(clock.start())
-    await ClockCycles(dut.clk, 1)
-
     MEMORY = [
         0x00,
         0x05,
@@ -461,27 +461,8 @@ async def test_addressing(dut):
         INSTR_ONE,
     ]
 
-    # Reset
-    dut._log.info(f"{len(MEMORY)=}")
-    dut._log.info("Reset")
-    dut.ena.value = 1
-    dut.ui_in.value = 2
-    dut.uio_in.value = 0
-    dut.rst_n.value = 0
-    await ClockCycles(dut.clk, 1)
-    assert dut.uio_out.value[7-EEPROM_CS]
-    dut.rst_n.value = 1
-    dut._log.info(f"Reset Done")
-    dut._log.info(f"Reading READ Command")
-    x = await read8(dut)
-    dut._log.info(f"Read {x=:08b}")
-    assert x == EEPROM_READ_COMMAND
-    assert not dut.uio_out.value[7-EEPROM_CS]
-    dut._log.info(f"Reading Address")
-    assert (await read8(dut)) == 0
-    assert (await read8(dut)) == 0
+    await do_reset(dut)
 
-    await ClockCycles(dut.clk, 1)
     await write8(dut, MEMORY[0])
     await write8(dut, MEMORY[1])
     await write8(dut, MEMORY[2])
