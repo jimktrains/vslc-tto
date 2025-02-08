@@ -15,8 +15,13 @@ module tt_um_jimktrains_vslc_core(
   input  wire       clk,
   input  wire       rst_n,
   input  wire [7:0] spi_clk_div,
-  input  wire [7:0] timer_clk_div
+  input  wire [7:0] timer_clk_div,
+  output wire [7:0] ledout,
+  output wire addr_strobe
 );
+assign ledout = eeprom_read_buf;
+assign addr_strobe = eeprom_read_ready;
+
   function [7:0]encode7seg(input [7:0]chr);
     case(chr)
           "A": encode7seg = 8'b00001000;

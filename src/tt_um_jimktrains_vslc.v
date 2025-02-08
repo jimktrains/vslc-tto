@@ -17,6 +17,12 @@ module tt_um_jimktrains_vslc (
   input  wire       rst_n    // reset_n - low to reset
 );
 
+wire [7:0]ledout;
+wire addr_strobe;
+wire [8:0]_unused;
+
+assign _unused = {ledout, addr_strobe};
+
 tt_um_jimktrains_vslc_core c(
   ui_in,
   uo_out,
@@ -27,6 +33,8 @@ tt_um_jimktrains_vslc_core c(
   clk,
   rst_n,
   8'h0,
-  8'h0
+  8'h0,
+  ledout,
+  addr_strobe
 );
 endmodule

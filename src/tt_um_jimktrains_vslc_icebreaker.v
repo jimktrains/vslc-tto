@@ -34,6 +34,7 @@ module tt_um_jimktrains_vslc_icebreaker (
   inout [7:0]uio
 );
 wire [7:0]ledout;
+wire addr_strobe;
 
 wire [7:0] uio_oe;
 wire [7:0] uio_in;
@@ -95,14 +96,16 @@ tt_um_jimktrains_vslc_core core(
   CLK,
   rst_n,
   23,
-  23
+  23,
+  ledout,
+  addr_strobe,
 );
 
 always @(posedge CLK) begin
   counter <= counter + 1;
   rst_n <= rst_n ? rst_n : counter < 8;
-  if (!counter[6]) {en1, en2, a,b,c,d,e,f,g,dp} <= {1'b0,1'b1,encode7seg({4'b0, ledout[3:0]}), uo_out[3]};
-  else {en1, en2, a,b,c,d,e,f,g, dp} <= {1'b1,1'b0,encode7seg({4'b0, ledout[7:4]}), uo_out[3]};
+  if (!counter[6]) {en1, en2, a,b,c,d,e,f,g,dp} <= {1'b0,1'b1,encode7seg({4'b0, ledout[3:0]}), addr_strobe};
+  else {en1, en2, a,b,c,d,e,f,g, dp} <= {1'b1,1'b0,encode7seg({4'b0, ledout[7:4]}), addr_strobe};
 end
 
   function [6:0]encode7seg(input [7:0]chr);
