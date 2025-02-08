@@ -29,6 +29,8 @@ module tt_um_jimktrains_vslc_icebreaker (
   output LED_BLU_N,
   output LED_GRN_N,
   output LED_RED_N,
+  output FLASH_IO0,
+  output FLASH_IO1,
   inout [7:0]uio
 );
 wire [7:0]ledout;
@@ -81,7 +83,7 @@ assign LED_RED_N = 1;
 
 reg a,b,c,d,e,f,g, en1, en2, dp;
 
-assign {P1A1, uio[3], P1A2, P1A3, P1A4, P1A7, P1A8, P1A9, P1A10, uio[7]} =  {en1, en2, a,f,b,g,c,d,e,dp};
+assign {P1A1, FLASH_IO0, P1A2, P1A3, P1A4, P1A7, P1A8, P1A9, P1A10, FLASH_IO1} =  {en1, en2, a,f,b,g,c,d,e,dp};
 
 tt_um_jimktrains_vslc_core core(
   ui_in,

@@ -45,7 +45,7 @@ ibp: icebreaker-prog
 $(SUBDIRPROJ).json: $(PROJECT_SOURCES)
 	yosys -ql $(SUBDIRPROJ).yslog -p 'synth_ice40 -top $(IBTOP) -json $@' $^
 
-$(SUBDIRPROJ).asc: $(SUBDIRPROJ).json $(PCF)
+$(SUBDIRPROJ).asc: $(SUBDIRPROJ).json
 	nextpnr-ice40 -ql $(SUBDIRPROJ).nplog --up5k --package sg48 --freq 12 --asc $@ --pcf $(PCF) --json $^
 
 $(SUBDIRPROJ).bin: $(SUBDIRPROJ).asc
