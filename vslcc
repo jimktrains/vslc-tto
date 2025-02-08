@@ -58,26 +58,30 @@ instr_opcode = {
 cur_addr = 4
 with open(args.filename, 'r') as f:
     for line in f:
-        line = line.strip().split(' ')
+        line = line.strip()
+        if len(line) == 0:
+            continue
+        if line.startswith('#'):
+            continue
+        line = line.upper()
+        line = line.split(' ')
         opcode = 0xff
         reg = 0
-        if len(line) > 0:
-            if line[0].startswith('#'):
-                continue
-            if line[0] not in instr_opcode:
-                print(f"{line} not found as an opcode", file=sys.stderr)
-                sys.exit(1)
-            opcode = instr_opcode[line[0]] 
-            if len(line) > 1:
-                if line[1].startswith('t'):
-                    reg = 0
-                elif line[1].startswith('i'):
-                    reg = int(line[1][1])
-                elif line[1].startswith('o'):
-                    reg = 8 + int(line[1][1])
-                else:
-                    print(f"{line[1]} is an unknown register", file=sys.stderr)
-                    sys.exit(2)
+        line[0] = line[0].upper()
+        if line[0] not in instr_opcode:
+            print(f"{line} not found as an opcode", file=sys.stderr)
+            sys.exit(1)
+        opcode = instr_opcode[line[0]] 
+        if len(line) > 1:
+            if line[1].startswith('S'):
+                reg = 0x40 + int(line[1][1])
+            elif line[1].startswith('I'):
+                reg = int(line[1][1])
+            elif line[1].startswith('O'):
+                reg = 8 + int(line[1][1])
+            else:
+                print(f"{line[1]} is an unknown register", file=sys.stderr)
+                sys.exit(2)
 
         bytecode[cur_addr] = opcode + reg
         print(f"{cur_addr=:02x} {line=} => {opcode=:02x} {reg=:02x} => {bytecode[cur_addr]:02x}({bytecode[cur_addr]:08b})")

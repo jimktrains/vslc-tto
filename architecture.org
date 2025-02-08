@@ -14,7 +14,7 @@
 
 Bit 7,6:
       00: Register
-      01: Register
+      01: Special Function Register (SFR)
       10: Truth Table
       11: Other
 Bit 5,4:
@@ -31,9 +31,10 @@ PUSH io reg 0000 IRRR
 POP  reg    0001 1RRR
 SET  reg    0010 1RRR
 RESET reg   0011 1RRR
-POP TIMER   0001 0000
-SET TIMER   0010 0000
-RESET TIMER 0011 0000
+PUSH sfr    0100 RRRR
+POP sfr     0101 RRRR
+SET sfr     0110 RRRR
+RESET sfr   0111 RRRR
 
 AND         1010 0001
 NAND        1010 1110
@@ -64,6 +65,9 @@ ROT         1111 0011
 NOP         1111 1111
 
 #+END_SRC
+** SFR
+   - 0x0 Timer Enable
+   - 0x1 Timer Output
 
 * Interface
 ** KeyPad
