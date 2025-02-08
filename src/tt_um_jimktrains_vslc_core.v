@@ -81,7 +81,7 @@ module tt_um_jimktrains_vslc_core(
   assign eeprom_hold_n_w = eeprom_hold_n;
 
   reg [31:0] counter;
-  wire spi_clk = clk && spi_clk_div == 0 ? clk : counter[spi_clk_div-1];
+  wire spi_clk = spi_clk_div == 0 ? clk : counter[spi_clk_div-1];
   wire timer_clk = timer_clk_div == 0 ? clk : counter[timer_clk_div-1];
   wire eeprom_rw;
 
@@ -180,7 +180,11 @@ module tt_um_jimktrains_vslc_core(
 
   always @(posedge clk) begin
     scan_cycle_trigger_in_reg <= scan_cycle_trigger_in;
-    counter <= rst_n_sync ? counter + 1 : 0;
+    if (!rst_n_sync) begin
+      counter <= 0;
+    end else begin
+      counter <= rst_n_sync ? counter + 1 : 0;
+    end
   end
   always @(negedge clk) begin
     rst_n_sync_reg <= rst_n;
