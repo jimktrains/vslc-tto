@@ -79,7 +79,7 @@ wire ena = 1;
 reg [31:0]counter = 0;
 
 reg rst_n = 0;
-assign LED_GRN_N = 1;//counter[23];
+assign LED_GRN_N = BTN_N;//counter[23];
 assign LED_RED_N = 1;
 
 reg a,b,c,d,e,f,g, en1, en2, dp;
@@ -95,17 +95,20 @@ tt_um_jimktrains_vslc_core core(
   ena,
   CLK,
   rst_n,
-  23,
-  23,
+  22,
+  22,
   ledout,
   addr_strobe,
+  scan_cycle_clk
 );
+
+wire scan_cycle_clk;
 
 always @(posedge CLK) begin
   counter <= counter + 1;
   rst_n <= rst_n ? rst_n : counter < 8;
   if (!counter[6]) {en1, en2, a,b,c,d,e,f,g,dp} <= {1'b0,1'b1,encode7seg({4'b0, ledout[3:0]}), addr_strobe};
-  else {en1, en2, a,b,c,d,e,f,g, dp} <= {1'b1,1'b0,encode7seg({4'b0, ledout[7:4]}), addr_strobe};
+  else {en1, en2, a,b,c,d,e,f,g, dp} <= {1'b1,1'b0,encode7seg({4'b0, ledout[7:4]}), scan_cycle_clk};
 end
 
   function [6:0]encode7seg(input [7:0]chr);
