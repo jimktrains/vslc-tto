@@ -79,7 +79,7 @@ module tt_um_jimktrains_vslc_executor(
   //                    (instr[3] & ~nos & ~tos);
 
   wire instr_stack = (instr_other && instr[5:4] == 2'b11);
-  wire instr_temporal = (instr_other && instr[5:4] == 2'b10);
+  wire instr_temporal = (instr_other && instr[5] == 1'b0);
   wire instr_swap = instr_stack && (logic_table == 4'b0010);
   wire instr_rot = instr_stack && (logic_table == 4'b0011);
   wire instr_clr = instr_stack && (logic_table == 4'b0000);
@@ -89,7 +89,7 @@ module tt_um_jimktrains_vslc_executor(
   wire has_2_result = instr_swap || has_3_result;
   wire has_3_result = instr_rot;
 
-  wire expected_prev_state = instr[3];
+  wire expected_prev_state = instr[4];
   wire temporal_result = (ui_in[regid] == ~expected_prev_state) &&
                          (ui_in_prev[regid] == expected_prev_state);
 

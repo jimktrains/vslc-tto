@@ -46,16 +46,16 @@ wire [7:0] uo_out;
 assign ui_in[0] = BTN_N;
 assign ui_in[1] = BTN1;
 assign ui_in[2] = BTN2;
-assign ui_in[4] = BTN3;
+assign ui_in[3] = BTN3;
 
 assign LED1 = uo_out[0];
 assign LED2 = uo_out[1];
 assign LED3 = uo_out[2];
 assign LED4 = uo_out[3];
 assign LED5 = uo_out[4];
-assign LEDR_N = uo_out[5];
-assign LEDG_N = uo_out[6];
-assign LED_BLU_N = uo_out[7];
+assign LEDR_N = !uo_out[5];
+assign LEDG_N = !uo_out[6];
+assign LED_BLU_N = !uo_out[7];
 
 assign uio[0] = uio_oe[0] ? uio_out[0] : 1'bz;
 assign uio[1] = uio_oe[1] ? uio_out[1] : 1'bz;
@@ -95,8 +95,8 @@ tt_um_jimktrains_vslc_core core(
   ena,
   CLK,
   rst_n,
-  22,
-  22,
+  8,
+  8,
   ledout,
   addr_strobe,
   scan_cycle_clk

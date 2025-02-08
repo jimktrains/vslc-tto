@@ -71,8 +71,8 @@ assign addr_strobe = eeprom_read_ready;
     instr_ready,
     rst_n_sync,
     eeprom_read_buf,
-    ui_in_reg,
-    ui_in_prev_reg,
+    ui_in_reg_w,
+    ui_in_prev_reg_w,
     TIMER_OUTPUT,
     uo_out,
     stack
@@ -124,6 +124,11 @@ assign addr_strobe = eeprom_read_ready;
   reg [7:0]ui_in_reg;
   reg [7:0]ui_in_prev_reg;
 
+  wire [7:0]ui_in_reg_w;
+  wire [7:0]ui_in_prev_reg_w;
+
+  assign ui_in_reg_w = ui_in_reg;
+  assign ui_in_prev_reg_w = ui_in_prev_reg;
 
   // reg [7:1]instr_buf;
   // wire [7:0]instr = {instr_buf, cipo};
