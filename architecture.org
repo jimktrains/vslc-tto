@@ -27,53 +27,65 @@ Bit 5,4:
 
 
 #+BEGIN_SRC
-PUSH io reg           0000 IRRR
-POP  reg              0001 1RRR
-SET  reg              0010 1RRR
-RESET reg             0011 1RRR
-POP TIMER             0001 0000
-SET TIMER             0010 0000
-RESET TIMER           0011 0000
+PUSH io reg 0000 IRRR
+POP  reg    0001 1RRR
+SET  reg    0010 1RRR
+RESET reg   0011 1RRR
+POP TIMER   0001 0000
+SET TIMER   0010 0000
+RESET TIMER 0011 0000
 
-nos          0011
-tos          0101
-           shift once
-          shift twice
-AND     1010 0001
-NAND    1010 1110
-OR      1010 0111
-NOR     1010 1000
-XOR     1010 0110
-BICOND  1010 1001
-IMPL    1010 1101
-NIMPL   1010 0010
-CONV    1010 1011
-NCONV   1010 0100
+AND         1010 0001
+NAND        1010 1110
+OR          1010 0111
+NOR         1010 1000
+XOR         1010 0110
+BICOND      1010 1001
+IMPL        1010 1101
+NIMPL       1010 0010
+CONV        1010 1011
+NCONV       1010 0100
 
-DUP     1000 1100
-OVER    1000 1010
-DROP    1010 1010
-ZERO    1011 0000
-ONE     1011 1111
-NOT     1001 0011
-OVERNOT 1010 0101
+DUP         1000 1100
+OVER        1000 1010
+DROP        1010 1010
+ZERO        1011 0000
+ONE         1011 1111
+NOT         1001 0011
+OVERNOT     1010 0101
 
-CLR     1111 0000
-SETALL  1111 0001
-SWAP    1111 0010
-ROT     1111 0011
-NOP     1111 1111
+RISING      1110 0RRR
+FALLING     1110 1RRR
 
-TIMER PA period  0111 00PP PPPP PPPP P=period
-TIMER PB period  0111 01PP PPPP PPPP P=period
-TIMER M mode     0111 000M M=cycle/one-shot
-TIMER CLOCKDIV D 0111 1DDD D=log2(clock divisor)-1
-
-RISING     1110 0RRR
-FALLING    1110 1RRR
+CLR         1111 0000
+SETALL      1111 0001
+SWAP        1111 0010
+ROT         1111 0011
+NOP         1111 1111
 
 #+END_SRC
 
-* Instruction Cycle
+* Interface
+** KeyPad
 
-  -
+#+BEGIN_SRC
+Type               PUSH       POP        SET         RESET
+Reg                IN 0/TIM0  IN 1       IN 2        IN 3
+SR1/SR2/S0         ZERO       AND        NIMPL       NOT
+OTHER              CLR        SETALL     SWAP        ROT
+
+Type
+Reg                IN 4       IN 5       IN 6        IN 7
+SR1/SR2/S0
+OTHER              NCONV      OVERNOT    XOR         OR
+
+Type                          SR1        SR2         S0
+Reg                OUT 0      OUT 1      OUT 2       OUT 3
+SR1/SR2/S0         NOR        BICOND     DROP/OVER
+OTHER
+
+Type               Rising     Falling                OTHER
+Reg                OUT 4      OUT 5      OUT 6       OUT 7
+SR1/SR2/S0         DUP        IMPL       NAND        ONE
+OTHER                                                NOP
+#+END_SRC

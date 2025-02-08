@@ -136,6 +136,7 @@ def generate_test(instr):
 
 
 def generate_timer_test():
+    return []
     return [
         ("Timer Test", None),
         push_true,
@@ -164,7 +165,7 @@ EEPROM_READ_COMMAND = 0x03;
 
 CYCLE_START = 7;
 EEPROM_COPI = 0;
-EEPROM_CIPO = 1;
+EEPROM_CIPO = 0;
 EEPROM_CS = 2;
 STACK_OUTPUT = 3;
 TOS_OUPUT = 6;
