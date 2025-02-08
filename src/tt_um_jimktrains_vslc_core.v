@@ -73,8 +73,8 @@ assign addr_strobe = eeprom_read_ready;
 
   reg eeprom_restart_read;
 
-  wire ecsn;
-  assign uio_out[EEPROM_CS] = ecsn;
+  wire eeprom_cs_n;
+  assign uio_out[EEPROM_CS] = eeprom_cs_n;
   wire [3:0]bit_counter;
 
   reg rst_n_sync_reg;
@@ -98,7 +98,7 @@ assign addr_strobe = eeprom_read_ready;
     eeprom_hold_n_w,
     cipo,
     copi,
-    ecsn,
+    eeprom_cs_n,
     eeprom_rw,
     eeprom_read_ready,
     eeprom_read_buf,
