@@ -19,9 +19,10 @@ module tt_um_jimktrains_vslc (
 
 wire [7:0]ledout;
 wire addr_strobe;
-wire [8:0]_unused;
+wire [9:0]_unused;
+wire scan_cycle_clk;
 
-assign _unused = {ledout, addr_strobe};
+assign _unused = {ledout, addr_strobe, scan_cycle_clk};
 
 tt_um_jimktrains_vslc_core c(
   ui_in,
@@ -35,6 +36,7 @@ tt_um_jimktrains_vslc_core c(
   8'h0,
   8'h0,
   ledout,
-  addr_strobe
+  addr_strobe,
+  scan_cycle_clk
 );
 endmodule
