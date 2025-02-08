@@ -29,7 +29,7 @@ instr_opcode = {
 "NOP": 0xff,
 "CLR": 0xf0,
 "SETALL": 0xf1,
-"RISING": 0b10000000,
+"RISING": 0b11000000,
 "FALLING": 0b11010000,
 "SWAP": 0b11110010,
 "ROT": 0b11110011,
@@ -65,8 +65,8 @@ with open(args.filename, 'r') as f:
             if line[0].startswith('#'):
                 continue
             if line[0] not in instr_opcode:
-                print(f"{line[0]} not found as an opcode")
-                sys.exit(0)
+                print(f"{line} not found as an opcode", file=sys.stderr)
+                sys.exit(1)
             opcode = instr_opcode[line[0]] 
             if len(line) > 1:
                 if line[1].startswith('t'):
@@ -76,10 +76,11 @@ with open(args.filename, 'r') as f:
                 elif line[1].startswith('o'):
                     reg = 8 + int(line[1][1])
                 else:
-                    print(f"{line[1]} is an unknown register")
+                    print(f"{line[1]} is an unknown register", file=sys.stderr)
+                    sys.exit(2)
 
         bytecode[cur_addr] = opcode + reg
-        print(f"{cur_addr=:02x} {line=} => {opcode=:02x} {reg=:02x} => {bytecode[cur_addr]:02x}")
+        print(f"{cur_addr=:02x} {line=} => {opcode=:02x} {reg=:02x} => {bytecode[cur_addr]:02x}({bytecode[cur_addr]:08b})")
         cur_addr += 1
 
 start_addr = struct.pack('>h', 4)

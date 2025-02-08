@@ -72,3 +72,6 @@ $(SUBDIRPROJ)_syntb.vcd: $(SUBDIRPROJ)_syntb
 
 clean:
 	rm -f $(SUBDIRPROJ)*
+
+write-eeprom:
+	minipro -p 25LC080D -w examples/prog1.eeprom.bin
