@@ -96,7 +96,7 @@ tt_um_jimktrains_vslc_core core(
   CLK,
   rst_n,
   8,
-  8,
+  20,
   ledout,
   addr_strobe,
   scan_cycle_clk

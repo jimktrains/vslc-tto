@@ -48,20 +48,21 @@ module tt_um_jimktrains_vslc_executor(
   wire nos = stack[1];
   wire hos = stack[2];
 
-  wire instr_reg_a = instr[7:6] == 0;
+  wire instr_reg = instr[7] == 0;
   wire instr_reg_b = instr[7:6] == 1;
+  // wire instr_reg_a = instr[7:6] == 0;
   wire instr_logic = instr[7:6] == 2;
   wire instr_other = instr[7:6] == 3;
 
   wire [2:0]regid = instr[2:0];
-  wire instr_push = instr_reg_a && instr[5:4] == 0;
+  wire instr_push = instr[5:4] == 0;
   wire ioreg = instr_push && instr[3];
   wire sfrreg = instr_reg_b;
-  wire instr_pop = instr_reg_a && instr[5:4] == 1;
-  wire instr_set = instr_reg_a && instr[5:4] == 2;
-  wire instr_reset = instr_reg_a && instr[5:4] == 3;
-  wire instr_push_type = instr_push;
-  wire instr_pop_type = (instr_pop || instr_set || instr_reset);
+  wire instr_pop = instr[5:4] == 1;
+  wire instr_set = instr[5:4] == 2;
+  wire instr_reset = instr[5:4] == 3;
+  wire instr_push_type = instr_reg && instr_push;
+  wire instr_pop_type = instr_reg && (instr_pop || instr_set || instr_reset);
   wire push_result = sfrreg ? sfr[regid] :(
                      ioreg ? uo_out[regid] : ui_in[regid]);
 
