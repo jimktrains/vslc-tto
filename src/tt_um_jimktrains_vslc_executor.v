@@ -6,8 +6,8 @@
 `default_nettype none
 
 module tt_um_jimktrains_vslc_executor(
-  input timer_clk,
   input clk,
+  input timer_clk,
   input instr_ready,
   input rst_n,
   input [7:0] instr,

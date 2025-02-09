@@ -66,7 +66,7 @@ assign addr_strobe = eeprom_read_ready;
 
 
   tt_um_jimktrains_vslc_executor exec(
-    clk,
+    spi_clk,
     timer_clk,
     instr_ready,
     rst_n_sync,
