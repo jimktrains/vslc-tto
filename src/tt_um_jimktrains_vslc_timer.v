@@ -12,35 +12,31 @@ module tt_um_jimktrains_vslc_timer(
   input [9:0] timer_period_b,
   input timer_enabled,
   output timer_output,
-  output [9:0]timer_counter_w
+  output [9:0]timer_counter_o
 );
   reg [9:0] timer_counter;
+  assign timer_counter_o = timer_counter;
   reg timer_phase;
   reg timer_output_r;
-  
 
   assign timer_output = timer_output_r;
-  assign timer_counter_w = timer_counter;
 
   always @(posedge clk) begin
-    if (!rst_n) begin
+    if (!rst_n || !timer_enabled) begin
+      timer_phase <= 1'b0;
+      timer_output_r <= 1'b0;
       timer_counter <= 0;
     end else begin
-      if (timer_enabled) begin
-          if (timer_phase == 1'b0 && timer_counter == timer_period_a) begin
-            timer_counter <= 10'b0;
-            timer_phase <= 1'b1;
-            timer_output_r <= ~timer_output_r;
-          end else if (timer_phase == 1'b1 && timer_counter == timer_period_b) begin
-            timer_counter <= 10'b0;
-            timer_phase <= 1'b0;
-            timer_output_r <= timer_period_b == 0 ? timer_output : ~timer_output;
-          end else begin
-            timer_counter <= timer_counter + 1;
-          end
-      end else begin
+      if (timer_phase == 1'b0 && timer_counter == timer_period_a) begin
+        timer_counter <= 10'b0;
+        timer_phase <= 1'b1;
+        timer_output_r <= ~timer_output_r;
+      end else if (timer_phase == 1'b1 && timer_counter == timer_period_b) begin
+        timer_counter <= 10'b0;
         timer_phase <= 1'b0;
-        timer_output_r <= 1'b0;
+        timer_output_r <= timer_period_b == 0 ? timer_output : ~timer_output;
+      end else begin
+        timer_counter <= timer_counter + 1;
       end
     end
   end

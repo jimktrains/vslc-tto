@@ -13,7 +13,6 @@ module tt_um_jimktrains_vslc_executor(
   input [7:0] instr,
   input [7:0] ui_in,
   input [7:0] ui_in_prev,
-  input [2:0] timer_reg,
   output [7:0] uo_out,
   output [15:0] stack_o
 );
@@ -26,6 +25,7 @@ module tt_um_jimktrains_vslc_executor(
   localparam SFR_TIMER_OUTPUT = 1;
 
   reg [7:0] sfr;
+  assign timer_enabled = sfr[0];
 
   tt_um_jimktrains_vslc_timer tim0(
     timer_clk,
@@ -48,20 +48,21 @@ module tt_um_jimktrains_vslc_executor(
   wire nos = stack[1];
   wire hos = stack[2];
 
-  wire instr_reg = instr[7] == 0;
-  wire instr_sfr = instr[6] == 1;
+  wire instr_reg_a = instr[7:6] == 0;
+  wire instr_reg_b = instr[7:6] == 1;
   wire instr_logic = instr[7:6] == 2;
   wire instr_other = instr[7:6] == 3;
 
   wire [2:0]regid = instr[2:0];
-  wire instr_push = instr_reg && instr[5:4] == 0;
-  wire ioreg = instr[3] && instr_push;
-  wire instr_pop = instr_reg && instr[5:4] == 1;
-  wire instr_set = instr_reg && instr[5:4] == 2;
-  wire instr_reset = instr_reg && instr[5:4] == 3;
+  wire instr_push = instr_reg_a && instr[5:4] == 0;
+  wire ioreg = instr_push && instr[3];
+  wire sfrreg = instr_reg_b;
+  wire instr_pop = instr_reg_a && instr[5:4] == 1;
+  wire instr_set = instr_reg_a && instr[5:4] == 2;
+  wire instr_reset = instr_reg_a && instr[5:4] == 3;
   wire instr_push_type = instr_push;
   wire instr_pop_type = (instr_pop || instr_set || instr_reset);
-  wire push_result = instr_sfr ? sfr[regid] : (
+  wire push_result = sfrreg ? sfr[regid] :(
                      ioreg ? uo_out[regid] : ui_in[regid]);
 
   // Every logic operation conceptually pops once or twice, or we pop none
@@ -105,16 +106,13 @@ module tt_um_jimktrains_vslc_executor(
               (instr_swap && nos) ||
               (instr_rot && nos) ||
               (instr_temporal && temporal_result);
-
-  wire res;
-  wire keep_val;
-  assign {res, keep_val} =
-            !instr_pop_type ? {1'bz, 1'b1} : (
+  wire val;
+  wire keepval;
+  assign {val, keepval} = !instr_pop_type ? {1'b0, 1'b1}: (
               instr_pop ? {stack[0], 1'b0} : (
-              !stack[0] ? {1'bz, 1'b1} : (
+              !stack[0] ? {1'b0, 1'b1} : (
               instr_set ? {1'b1, 1'b0} : (
-              instr_reset ? {1'b0, 1'b0} : {1'bz, 1'b1}))));
-
+              instr_reset ? {1'b0, 1'b0} : {1'b0, 1'b1}))));
 
   always @(negedge clk) begin
     if (!rst_n) begin
@@ -123,36 +121,42 @@ module tt_um_jimktrains_vslc_executor(
       timer_period_a <= 2;
       timer_period_b <= 3;
       sfr <= 0;
-    end else if (instr_ready) begin
-          sfr[SFR_TIMER_OUTPUT] <= timer_output;
+    end else begin
+      sfr[1] <= timer_output;
+      if (instr_ready) begin
+        stack[15] <= instr_clr ? 0 : (
+                     instr_setall ? 1 : (
+                     shift_left_1 ? stack[14] : (
+                     shift_right_1 ? 0 : stack[15])));
+        stack[14:3] <= instr_clr ? 12'b0 : (
+                       instr_setall ? 12'hFFF : (
+                       shift_left_1 ? stack[13:2] : (
+                       shift_right_1 ? stack[15:4] : stack[14:3])));
+        stack[2] <= instr_clr ? 0 : (
+                    instr_setall ? 1 : (
+                    has_3_result ? res2 : (
+                    shift_left_1 ? stack[1] : (
+                    shift_right_1 ? stack[3] : stack[2]))));
+        stack[1] <= instr_clr ? 0 : (
+                    instr_setall ? 1 : (
+                    has_2_result ? res1 : (
+                    shift_left_1 ? stack[0] : (
+                    shift_right_1 ? stack[2] : stack[1]))));
+        stack[0] <= instr_clr ? 0 : (
+                    instr_setall ? 1 : (
+                    has_1_result ? res0 : (
+                    shift_left_1 ? 0 : (
+                    shift_right_1 ? stack[1] : stack[0]))));
 
-          stack[15] <= instr_clr ? 0 : (
-                       instr_setall ? 1 : (
-                       shift_left_1 ? stack[14] : (
-                       shift_right_1 ? 0 : stack[15])));
-          stack[14:3] <= instr_clr ? 12'b0 : (
-                         instr_setall ? 12'hFFF : (
-                         shift_left_1 ? stack[13:2] : (
-                         shift_right_1 ? stack[15:4] : stack[14:3])));
-          stack[2] <= instr_clr ? 0 : (
-                      instr_setall ? 1 : (
-                      has_3_result ? res2 : (
-                      shift_left_1 ? stack[1] : (
-                      shift_right_1 ? stack[3] : stack[2]))));
-          stack[1] <= instr_clr ? 0 : (
-                      instr_setall ? 1 : (
-                      has_2_result ? res1 : (
-                      shift_left_1 ? stack[0] : (
-                      shift_right_1 ? stack[2] : stack[1]))));
-          stack[0] <= instr_clr ? 0 : (
-                      instr_setall ? 1 : (
-                      has_1_result ? res0 : (
-                      shift_left_1 ? 0 : (
-                      shift_right_1 ? stack[1] : stack[0]))));
 
-
-        uo_out_reg[regid] <= (!instr_sfr && !keep_val) ? res : uo_out_reg[regid];
-        if (regid != SFR_TIMER_OUTPUT) sfr[regid] <= (instr_sfr && !keep_val) ? res : sfr[regid];
+        if (!keepval) begin
+          if (sfrreg) sfr[regid] <= val;
+          else uo_out_reg[regid] <= val;
+        end else begin
+          sfr <= sfr;
+          uo_out_reg <= uo_out_reg;
         end
+      end
     end
+  end
 endmodule

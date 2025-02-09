@@ -66,18 +66,16 @@ assign addr_strobe = eeprom_read_ready;
 
 
   tt_um_jimktrains_vslc_executor exec(
-    clk,
+    spi_clk,
     timer_clk,
     instr_ready,
     rst_n_sync,
     eeprom_read_buf,
     ui_in_reg_w,
     ui_in_prev_reg_w,
-    TIMER_OUTPUT,
     uo_out,
     stack
   );
-
 
   wire _unused = ena;
 
