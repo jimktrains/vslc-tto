@@ -84,9 +84,9 @@ assign addr_strobe = eeprom_read_ready;
   localparam SPI_CLK               = 3'h1;
   localparam EEPROM_CS             = 3'h2;
   localparam STACK_OUT             = 3'h3;
-  localparam EEPROM_HOLD = 3'h4;
+  localparam INTF_STROBE           = 3'h4;
   localparam SCAN_CYCLE_OUT        = 3'h5;
-  localparam INTF_STROBE           = 3'h6;
+  localparam EEPROM_HOLD           = 3'h6;
   localparam SCAN_CYCLE_TRIGGER_IN = 3'h7;
 
   // uo_out
