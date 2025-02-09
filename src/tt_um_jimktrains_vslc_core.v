@@ -73,11 +73,9 @@ assign addr_strobe = eeprom_read_ready;
     eeprom_read_buf,
     ui_in_reg_w,
     ui_in_prev_reg_w,
-    TIMER_OUTPUT,
     uo_out,
     stack
   );
-
 
   wire _unused = ena;
 
