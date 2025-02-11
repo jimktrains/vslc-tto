@@ -83,8 +83,6 @@ reg rst_n = 0;
 assign LED_GRN_N = !uo_out[7];
 assign LED_RED_N = !scan_cycle_clk;
 
-reg a,b,c,d,e,f,g, en1, en2, dp;
-
 // assign {P1A1, FLASH_IO0, P1A2, P1A3, P1A4, P1A7, P1A8, P1A9, P1A10, FLASH_IO1} =  {en1, en2, a,f,b,g,c,d,e,dp};
 assign P1A1 = uo_out[0];
 assign P1A2 = uo_out[1];
@@ -105,8 +103,9 @@ tt_um_jimktrains_vslc_core core(
   ena,
   CLK,
   rst_n,
-  4,
-  20,
+  3,
+  7,
+  5,
   ledout,
   addr_strobe,
   scan_cycle_clk
@@ -117,29 +116,5 @@ wire scan_cycle_clk;
 always @(posedge CLK) begin
   counter <= counter + 1;
   rst_n <= rst_n ? rst_n : counter < 8;
-  //if (!counter[6]) {en1, en2, a,b,c,d,e,f,g,dp} <= {1'b0,1'b1,encode7seg({4'b0, ledout[3:0]}), addr_strobe};
-  //else {en1, en2, a,b,c,d,e,f,g, dp} <= {1'b1,1'b0,encode7seg({4'b0, ledout[7:4]}), scan_cycle_clk};
 end
-
-  function [6:0]encode7seg(input [7:0]chr);
-    case(chr)
-	          8'h0: encode7seg = 7'b1111110;
-	          8'h1: encode7seg = 7'b0110000;
-	          8'h2: encode7seg = 7'b1101101;
-	          8'h3: encode7seg = 7'b1111001;
-	          8'h4: encode7seg = 7'b0110011;
-	          8'h5: encode7seg = 7'b1011011;
-	          8'h6: encode7seg = 7'b1011111;
-	          8'h7: encode7seg = 7'b1110000;
-	          8'h8: encode7seg = 7'b1111111;
-	          8'h9: encode7seg = 7'b1111011;
-	          8'ha: encode7seg = 7'b1110111;
-	          8'hb: encode7seg = 7'b0011111;
-	          8'hc: encode7seg = 7'b1001110;
-	          8'hd: encode7seg = 7'b0111101;
-	          8'he: encode7seg = 7'b1001111;
-	          8'hf: encode7seg = 7'b1000111;
-          default: encode7seg = 7'h00;
-    endcase
-  endfunction
 endmodule

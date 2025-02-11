@@ -9,7 +9,8 @@ PROJECT_SOURCES = tt_um_jimktrains_vslc.v \
 									tt_um_jimktrains_vslc_core.v \
 									tt_um_jimktrains_vslc_eeprom_reader.v \
 									tt_um_jimktrains_vslc_executor.v \
-									tt_um_jimktrains_vslc_timer.v
+									tt_um_jimktrains_vslc_timer.v \
+									tt_um_jimktrains_vslc_servo.v
 
 
 ifneq ($(GATES),yes)

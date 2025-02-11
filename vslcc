@@ -103,7 +103,7 @@ def compile_logic(line, line_num):
                     print(f"L{line_num} mismatch parens. invalid syntax", file=sys.stderr)
                     sys.exit(5)
             else:
-                if i != "(" and len(opstack) != 0 and ops.find(opstack[-1]) >= ops.find(i):
+                if i != "(" and len(opstack) != 0 and ops.find(opstack[-1]) > ops.find(i):
                     stack.append(op_opcode[opstack.pop()])
                 opstack.append(i)
         else:

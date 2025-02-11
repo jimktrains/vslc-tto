@@ -22,6 +22,7 @@ project:
     - "tt_um_jimktrains_vslc_eeprom_reader.v"
     - "tt_um_jimktrains_vslc_executor.v"
     - "tt_um_jimktrains_vslc_timer.v"
+    - "tt_um_jimktrains_vslc_servo.v"
 
 
 # The pinout of your project. Leave unused pins blank. DO NOT delete or add any pins.

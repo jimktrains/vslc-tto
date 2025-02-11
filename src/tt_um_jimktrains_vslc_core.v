@@ -14,8 +14,9 @@ module tt_um_jimktrains_vslc_core(
   input  wire       ena,
   input  wire       clk,
   input  wire       rst_n,
-  input  wire [7:0] spi_clk_div,
-  input  wire [7:0] timer_clk_div,
+  input  wire [7:0] spi_clk_div_init,
+  input  wire [7:0] timer_clk_div_init,
+  input  wire [7:0] servo_clk_div_init,
   output wire [7:0] ledout,
   output wire addr_strobe,
   output wire scan_cycle_clk_w
@@ -43,9 +44,13 @@ assign addr_strobe = eeprom_read_ready;
   wire eeprom_hold_n_w;
   assign eeprom_hold_n_w = eeprom_hold_n;
 
+  reg [7:0] spi_clk_div;
+  reg [7:0] timer_clk_div;
+  reg [7:0] servo_clk_div;
   reg [31:0] counter;
   wire spi_clk = spi_clk_div == 0 ? clk : counter[spi_clk_div-1];
   wire timer_clk = timer_clk_div == 0 ? clk : counter[timer_clk_div-1];
+  wire servo_clk = servo_clk_div == 0 ? clk : counter[servo_clk_div-1];
   wire eeprom_rw;
 
   tt_um_jimktrains_vslc_eeprom_reader eereader(
@@ -68,6 +73,7 @@ assign addr_strobe = eeprom_read_ready;
   tt_um_jimktrains_vslc_executor exec(
     spi_clk,
     timer_clk,
+    servo_clk,
     instr_ready,
     rst_n_sync,
     eeprom_read_buf,
@@ -152,6 +158,9 @@ assign addr_strobe = eeprom_read_ready;
       ui_in_reg <= ui_in;
       ui_in_prev_reg <= ui_in;
       scan_cycle_clk_prev <= 0;
+      spi_clk_div <= spi_clk_div_init;
+      timer_clk_div <= timer_clk_div_init;
+      servo_clk_div <= servo_clk_div_init;
     end else begin
       counter <= rst_n_sync ? counter + 1 : 0;
       scan_cycle_clk <= auto_scan_cycle || scan_cycle_trigger_in_reg;

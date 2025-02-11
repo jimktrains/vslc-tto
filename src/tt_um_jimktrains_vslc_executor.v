@@ -8,6 +8,7 @@
 module tt_um_jimktrains_vslc_executor(
   input clk,
   input timer_clk,
+  input servo_clk,
   input instr_ready,
   input rst_n,
   input [7:0] instr,
@@ -16,16 +17,28 @@ module tt_um_jimktrains_vslc_executor(
   output [7:0] uo_out,
   output [15:0] stack_o
 );
-  reg [9:0] timer_period_a;
-  reg [9:0] timer_period_b;
+  reg [15:0] timer_period_a;
+  reg [15:0] timer_period_b;
   wire timer_enabled;
   wire timer_output;
 
+  reg [15:0] servo_set_val;
+  reg [15:0] servo_reset_val;
+  reg [15:0] servo_freq_val;
+  wire servo_enabled;
+  wire servo_val;
+  wire servo_output;
+
   localparam SFR_TIMER_ENABLE = 0;
   localparam SFR_TIMER_OUTPUT = 1;
+  localparam SFR_SERVO_ENABLE = 2;
+  localparam SFR_SERVO_VAL    = 3;
+  localparam SFR_SERVO_OUTPUT = 4;
 
-  reg [7:0] sfr;
-  assign timer_enabled = sfr[0];
+  reg [15:0] sfr;
+  assign timer_enabled = sfr[SFR_TIMER_ENABLE];
+  assign servo_enabled = sfr[SFR_SERVO_ENABLE];
+  assign servo_val = sfr[SFR_SERVO_VAL];
 
   tt_um_jimktrains_vslc_timer tim0(
     timer_clk,
@@ -37,8 +50,19 @@ module tt_um_jimktrains_vslc_executor(
     timer_counter
   );
 
-  wire [9:0] timer_counter;
-  assign timer_enabled = sfr[SFR_TIMER_ENABLE];
+  tt_um_jimktrains_vslc_servo srv0(
+    servo_clk,
+    rst_n,
+    servo_set_val,
+    servo_reset_val,
+    servo_freq_val,
+    servo_enabled,
+    servo_val,
+    servo_output
+  );
+
+
+  wire [15:0] timer_counter;
 
   reg [15:0]stack;
   reg [7:0]uo_out_reg;
@@ -63,7 +87,8 @@ module tt_um_jimktrains_vslc_executor(
   wire instr_reset = instr[5:4] == 3;
   wire instr_push_type = instr_reg && instr_push;
   wire instr_pop_type = instr_reg && (instr_pop || instr_set || instr_reset);
-  wire push_result = sfrreg ? sfr[regid] :(
+  wire [3:0]sfrid = instr[3:0];
+  wire push_result = sfrreg ? sfr[sfrid] :(
                      ioreg ? uo_out[regid] : ui_in[regid]);
 
   // Every logic operation conceptually pops once or twice, or we pop none
@@ -119,11 +144,16 @@ module tt_um_jimktrains_vslc_executor(
     if (!rst_n) begin
       stack <= 16'b0;
       uo_out_reg <= 8'b0;
-      timer_period_a <= 2;
-      timer_period_b <= 3;
+      timer_period_a <= 46875;
+      timer_period_b <= 46875;
+      servo_freq_val <= 7500;
+      servo_reset_val <= 950;
+      servo_set_val <= 188;
       sfr <= 0;
     end else begin
-      sfr[1] <= timer_output;
+      if (timer_enabled) sfr[SFR_TIMER_OUTPUT] <= timer_output;
+      if (servo_enabled) sfr[SFR_SERVO_OUTPUT] <= servo_output;
+    uo_out_reg[7] <= servo_output;
       if (instr_ready) begin
         stack[15] <= instr_clr ? 0 : (
                      instr_setall ? 1 : (
@@ -151,7 +181,7 @@ module tt_um_jimktrains_vslc_executor(
 
 
         if (!keepval) begin
-          if (sfrreg) sfr[regid] <= val;
+          if (sfrreg) sfr[sfrid] <= val;
           else uo_out_reg[regid] <= val;
         end
       end

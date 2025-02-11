@@ -13,6 +13,7 @@ PROJECT_SOURCES = $(SRC_DIR)/tt_um_jimktrains_vslc_icebreaker.v \
 									$(SRC_DIR)/tt_um_jimktrains_vslc_eeprom_reader.v \
 									$(SRC_DIR)/tt_um_jimktrains_vslc_executor.v \
 									$(SRC_DIR)/tt_um_jimktrains_vslc_timer.v \
+									$(SRC_DIR)/tt_um_jimktrains_vslc_servo.v \
 									$(SRC_DIR)/tt_um_jimktrains_vslc.v
 
 

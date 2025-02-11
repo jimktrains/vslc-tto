@@ -35,6 +35,7 @@ tt_um_jimktrains_vslc_core c(
   rst_n,
   8'h0,
   8'h0,
+  8'h0,
   ledout,
   addr_strobe,
   scan_cycle_clk

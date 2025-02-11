@@ -6,264 +6,264 @@
 ; L6 .define segF o5
 ; L7 .define segG o6
 ; L8 .define segDP o7
-; L10 .define t0 s4
-; L11 .define t1 s5
-; L12 .define t2 s6
-; L13 .define t3 s7
-; L15 RISING i2
+; L10 .define TIMER_ENABLE s0
+; L11 .define TIMER_OUTPUT s1
+; L12 .define SERVO_ENABLE s2
+; L13 .define SERVO_VAL    s3
+; L14 .define SERVO_OUTPUT s4
+; L16 .define t0 s6
+; L17 .define t1 s7
+; L18 .define t2 s8
+; L19 .define t3 s9
+; L21 RISING i2
 RISING I2
 DUP
-; L18 PUSH t0
-PUSH S4
-DUP
-ROT
-XOR
-; L22 POP t0
-POP S4
-AND
-DUP
-; L26 PUSH t1
-PUSH S5
-DUP
-ROT
-XOR
-; L30 POP t1
-POP S5
-AND
-DUP
-; L34 PUSH t2
+; L24 PUSH t0
 PUSH S6
 DUP
 ROT
 XOR
-; L38 POP t2
+; L28 POP t0
 POP S6
 AND
 DUP
-; L42 PUSH t3
+; L32 PUSH t1
 PUSH S7
 DUP
 ROT
 XOR
-; L46 POP t3
+; L36 POP t1
 POP S7
 AND
-; L49 .logic (~t2 & ~t0) | (~t3 & t1) | (~t3 & t2 & t0) | (t3 & ~t2 & ~t1) | (t3 & ~t0) | (t2 & t1)
+DUP
+; L40 PUSH t2
+PUSH S8
+DUP
+ROT
+XOR
+; L44 POP t2
+POP S8
+AND
+DUP
+; L48 PUSH t3
+PUSH S9
+DUP
+ROT
+XOR
+; L52 POP t3
+POP S9
+AND
+; L55 .logic (~t2 & ~t0) | (~t3 & t1) | (~t3 & t2 & t0) | (t3 & ~t2 & ~t1) | (t3 & ~t0) | (t2 & t1)
+PUSH S8
+NOT
 PUSH S6
 NOT
-PUSH S4
-NOT
 AND
-PUSH S7
+PUSH S9
 NOT
-PUSH S5
+PUSH S7
 AND
-OR
-PUSH S7
+PUSH S9
 NOT
+PUSH S8
 PUSH S6
 AND
-PUSH S4
 AND
-OR
+PUSH S9
+PUSH S8
+NOT
 PUSH S7
+NOT
+AND
+AND
+PUSH S9
 PUSH S6
 NOT
-PUSH S5
-NOT
 AND
-AND
-OR
+PUSH S8
 PUSH S7
-PUSH S4
-NOT
 AND
 OR
-PUSH S6
-PUSH S5
-AND
 OR
-; L50 POP segA
+OR
+OR
+OR
+; L56 POP segA
 POP O0
-; L52 .logic (~t3 & ~t1 & ~t0) | (~t3 & t1 & t0) | (~t2 & ~t0) | (t3 & ~t1 & t0) | (~t3 & ~t2)
-PUSH S7
+; L58 .logic (~t3 & ~t1 & ~t0) | (~t3 & t1 & t0) | (~t2 & ~t0) | (t3 & ~t1 & t0) | (~t3 & ~t2)
+PUSH S9
 NOT
-PUSH S5
-NOT
-PUSH S4
-NOT
-AND
-AND
-PUSH S7
-NOT
-PUSH S5
-AND
-PUSH S4
-AND
-OR
-PUSH S6
-NOT
-PUSH S4
-NOT
-AND
-OR
-PUSH S7
-PUSH S5
-NOT
-PUSH S4
-AND
-AND
-OR
 PUSH S7
 NOT
 PUSH S6
 NOT
 AND
+AND
+PUSH S9
+NOT
+PUSH S7
+PUSH S6
+AND
+AND
+PUSH S8
+NOT
+PUSH S6
+NOT
+AND
+PUSH S9
+PUSH S7
+NOT
+PUSH S6
+AND
+AND
+PUSH S9
+NOT
+PUSH S8
+NOT
+AND
 OR
-; L53 POP segB
+OR
+OR
+OR
+; L59 POP segB
 POP O1
-; L55 .logic (~t3 & t2) | (t3 & ~t2) | (~t1 & t0) | (~t2 & ~t1) | (~t2 & t0)
-PUSH S7
+; L61 .logic (~t3 & t2) | (t3 & ~t2) | (~t1 & t0) | (~t2 & ~t1) | (~t2 & t0)
+PUSH S9
 NOT
-PUSH S6
+PUSH S8
+AND
+PUSH S9
+PUSH S8
+NOT
 AND
 PUSH S7
+NOT
 PUSH S6
+AND
+PUSH S8
+NOT
+PUSH S7
 NOT
 AND
-OR
-PUSH S5
+PUSH S8
 NOT
-PUSH S4
-AND
-OR
 PUSH S6
-NOT
-PUSH S5
-NOT
 AND
 OR
-PUSH S6
-NOT
-PUSH S4
-AND
 OR
-; L56 POP segC
+OR
+OR
+; L62 POP segC
 POP O2
-; L58 .logic (t2 & ~t1 & t0) | (~t3 & ~t2 & ~t0) | (~t2 & t1 & t0) | (t3 & ~t1) | (t2 & t1 & ~t0)
-PUSH S6
-PUSH S5
-NOT
-PUSH S4
-AND
-AND
+; L64 .logic (t2 & ~t1 & t0) | (~t3 & ~t2 & ~t0) | (~t2 & t1 & t0) | (t3 & ~t1) | (t2 & t1 & ~t0)
+PUSH S8
 PUSH S7
 NOT
 PUSH S6
-NOT
-PUSH S4
-NOT
 AND
 AND
-OR
+PUSH S9
+NOT
+PUSH S8
+NOT
 PUSH S6
 NOT
-PUSH S5
 AND
-PUSH S4
 AND
-OR
+PUSH S8
+NOT
 PUSH S7
-PUSH S5
-NOT
-AND
-OR
 PUSH S6
-PUSH S5
 AND
-PUSH S4
+AND
+PUSH S9
+PUSH S7
 NOT
 AND
+PUSH S8
+PUSH S7
+PUSH S6
+NOT
+AND
+AND
 OR
-; L59 POP segD
+OR
+OR
+OR
+; L65 POP segD
 POP O3
-; L61 .logic (~t2 & ~t0) | (t1 & ~t0) | (t3 & t1) | (t3 & t2)
+; L67 .logic (~t2 & ~t0) | (t1 & ~t0) | (t3 & t1) | (t3 & t2)
+PUSH S8
+NOT
 PUSH S6
 NOT
-PUSH S4
-NOT
 AND
-PUSH S5
-PUSH S4
-NOT
-AND
-OR
-PUSH S7
-PUSH S5
-AND
-OR
 PUSH S7
 PUSH S6
+NOT
+AND
+PUSH S9
+PUSH S7
+AND
+PUSH S9
+PUSH S8
 AND
 OR
-; L62 POP segE
+OR
+OR
+; L68 POP segE
 POP O4
-; L64 .logic (~t1 & ~t0) | (~t3 & t2 & ~t1) | (t2 & ~t0) | (t3 & ~t2) | (t3 & t1)
-PUSH S5
-NOT
-PUSH S4
-NOT
-AND
+; L70 .logic (~t1 & ~t0) | (~t3 & t2 & ~t1) | (t2 & ~t0) | (t3 & ~t2) | (t3 & t1)
 PUSH S7
 NOT
 PUSH S6
-AND
-PUSH S5
 NOT
 AND
-OR
-PUSH S6
-PUSH S4
+PUSH S9
 NOT
-AND
-OR
+PUSH S8
 PUSH S7
+NOT
+AND
+AND
+PUSH S8
 PUSH S6
 NOT
 AND
-OR
+PUSH S9
+PUSH S8
+NOT
+AND
+PUSH S9
 PUSH S7
-PUSH S5
 AND
 OR
-; L65 POP segF
+OR
+OR
+OR
+; L71 POP segF
 POP O5
-; L67 .logic (~t2 & t1) | (t3 & ~t2) | (~t3 & t2 & ~t1) | (t1 & ~t0) | (t3 & t0)
-PUSH S6
-NOT
-PUSH S5
-AND
-PUSH S7
-PUSH S6
-NOT
-AND
-OR
-PUSH S7
-NOT
-PUSH S6
-AND
-PUSH S5
-NOT
-AND
-OR
-PUSH S5
-PUSH S4
-NOT
-AND
-OR
-PUSH S7
-PUSH S4
-AND
-OR
-; L68 pop segG
+; L73 ;.logic (~t2 & t1) | (t3 & ~t2) | (~t3 & t2 & ~t1) | (t1 & ~t0) | (t3 & t0)
+; L74 ;pop segG
+ZERO
+; L77 POP TIMER_ENABLE
+POP S0
+ONE
+; L79 POP SERVO_ENABLE
+POP S2
+; L81 PUSH TIMER_OUTPUT
+PUSH S1
+; L82 POP segG
 POP O6
+; L84 RISING i3
+RISING I3
+; L85 SET SERVO_VAL
+SET S3
+; L87 FALLING i2
+FALLING I2
+; L88 RESET SERVO_VAL
+RESET S3
+; L91 PUSH SERVO_OUTPUT
+PUSH S4
+; L92 POP segDP
+POP O7
