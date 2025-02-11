@@ -34,6 +34,7 @@ module tt_um_jimktrains_vslc_executor(
   localparam SFR_SERVO_ENABLE = 2;
   localparam SFR_SERVO_VAL    = 3;
   localparam SFR_SERVO_OUTPUT = 4;
+  localparam SFR_TIMER_OUTPUT_ENABLE = 5;
 
   reg [15:0] sfr;
   assign timer_enabled = sfr[SFR_TIMER_ENABLE];
@@ -151,9 +152,16 @@ module tt_um_jimktrains_vslc_executor(
       servo_set_val <= 188;
       sfr <= 0;
     end else begin
-      if (timer_enabled) sfr[SFR_TIMER_OUTPUT] <= timer_output;
-      if (servo_enabled) sfr[SFR_SERVO_OUTPUT] <= servo_output;
-    uo_out_reg[7] <= servo_output;
+      if (timer_enabled) begin
+        sfr[SFR_TIMER_OUTPUT] <= timer_output;
+        if (sfr[SFR_TIMER_OUTPUT_ENABLE]) begin
+          uo_out_reg[6] <= timer_output;
+        end
+      end
+      if (servo_enabled) begin
+        sfr[SFR_SERVO_OUTPUT] <= servo_output;
+        uo_out_reg[7] <= servo_output;
+      end
       if (instr_ready) begin
         stack[15] <= instr_clr ? 0 : (
                      instr_setall ? 1 : (

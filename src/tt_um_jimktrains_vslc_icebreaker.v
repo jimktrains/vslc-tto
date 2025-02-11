@@ -73,7 +73,7 @@ assign uio_in[3] = uio[3];
 assign uio_in[4] = uio[4];
 assign uio_in[5] = uio[5];
 assign uio_in[6] = uio[6];
-assign uio_in[7] = uio[7];
+assign uio_in[7] = 0;
 
 wire ena = 1;
 

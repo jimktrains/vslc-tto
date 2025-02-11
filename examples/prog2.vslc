@@ -12,6 +12,7 @@
 .define SERVO_ENABLE s2
 .define SERVO_VAL    s3
 .define SERVO_OUTPUT s4
+.define TIMER_OUTPUT_ENABLE s5
 
 .define t0 s6
 .define t1 s7
@@ -20,37 +21,37 @@
 
 RISING i2
 
-DUP 
+DUP
 PUSH t0
-DUP 
-ROT 
-XOR 
+DUP
+ROT
+XOR
 POP t0
-AND 
+AND
 
-DUP 
+DUP
 PUSH t1
-DUP 
-ROT 
-XOR 
+DUP
+ROT
+XOR
 POP t1
-AND 
+AND
 
-DUP 
+DUP
 PUSH t2
-DUP 
-ROT 
-XOR 
+DUP
+ROT
+XOR
 POP t2
-AND 
+AND
 
-DUP 
+DUP
 PUSH t3
-DUP 
-ROT 
-XOR 
+DUP
+ROT
+XOR
 POP t3
-AND 
+AND
 
 .logic (~t2 & ~t0) | (~t3 & t1) | (~t3 & t2 & t0) | (t3 & ~t2 & ~t1) | (t3 & ~t0) | (t2 & t1)
 POP segA
@@ -70,23 +71,5 @@ POP segE
 .logic (~t1 & ~t0) | (~t3 & t2 & ~t1) | (t2 & ~t0) | (t3 & ~t2) | (t3 & t1)
 POP segF
 
-;.logic (~t2 & t1) | (t3 & ~t2) | (~t3 & t2 & ~t1) | (t1 & ~t0) | (t3 & t0)
-;pop segG
-
-ZERO
-POP TIMER_ENABLE
-ONE
-POP SERVO_ENABLE
-
-PUSH TIMER_OUTPUT
-POP segG
-
-RISING i3
-SET SERVO_VAL
-
-FALLING i2
-RESET SERVO_VAL
-
-
-PUSH SERVO_OUTPUT
-POP segDP
+.logic (~t2 & t1) | (t3 & ~t2) | (~t3 & t2 & ~t1) | (t1 & ~t0) | (t3 & t0)
+pop segG
