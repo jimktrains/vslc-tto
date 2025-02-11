@@ -84,7 +84,7 @@ assign addr_strobe = eeprom_read_ready;
   localparam SPI_CLK               = 3'h1;
   localparam EEPROM_CS             = 3'h2;
   localparam STACK_OUT             = 3'h3;
-  localparam INTF_STROBE           = 3'h4;
+  localparam TOS_OUT               = 3'h4;
   localparam SCAN_CYCLE_OUT        = 3'h5;
   localparam EEPROM_HOLD           = 3'h6;
   localparam SCAN_CYCLE_TRIGGER_IN = 3'h7;
@@ -102,7 +102,7 @@ assign addr_strobe = eeprom_read_ready;
   assign uio_oe[STACK_OUT]  = 1;
   assign uio_oe[SPI_CLK]  = 1;
   assign uio_oe[SCAN_CYCLE_OUT] = 1;
-  assign uio_oe[INTF_STROBE] = 1;
+  assign uio_oe[TOS_OUT] = 1;
   assign uio_oe[SCAN_CYCLE_TRIGGER_IN]  = 0;
 
   assign cipo = uio_in[SPI_SD];
@@ -115,7 +115,7 @@ assign addr_strobe = eeprom_read_ready;
   assign uio_out[STACK_OUT] = stack_out_bit;
   assign uio_out[SPI_CLK]  = spi_clk;
   assign uio_out[SCAN_CYCLE_OUT]  = scan_cycle_clk;
-  assign uio_out[INTF_STROBE]  = stack[0];
+  assign uio_out[TOS_OUT]  = stack[0];
   assign uio_out[SCAN_CYCLE_TRIGGER_IN]  = 0;
   assign scan_cycle_trigger_in = uio_in[SCAN_CYCLE_TRIGGER_IN];
 
@@ -149,8 +149,17 @@ assign addr_strobe = eeprom_read_ready;
     scan_cycle_trigger_in_reg <= scan_cycle_trigger_in;
     if (!rst_n_sync) begin
       counter <= 0;
+      ui_in_reg <= ui_in;
+      ui_in_prev_reg <= ui_in;
+      scan_cycle_clk_prev <= 0;
     end else begin
       counter <= rst_n_sync ? counter + 1 : 0;
+      scan_cycle_clk <= auto_scan_cycle || scan_cycle_trigger_in_reg;
+      scan_cycle_clk_prev <= scan_cycle_clk;
+      if (scan_cycle_clk && !scan_cycle_clk_prev) begin
+        ui_in_reg <= ui_in;
+        ui_in_prev_reg <= ui_in_reg;
+      end
     end
   end
 
@@ -161,16 +170,7 @@ assign addr_strobe = eeprom_read_ready;
       end_addr <= 0;
       eeprom_restart_read <= 0;
       eeprom_hold_n <= 1;
-      scan_cycle_clk_prev <= 0;
-      ui_in_reg <= ui_in;
-      ui_in_prev_reg <= ui_in;
     end else begin
-      scan_cycle_clk <= auto_scan_cycle; // || scan_cycle_trigger_in_reg;
-      scan_cycle_clk_prev <= scan_cycle_clk;
-      if (scan_cycle_clk && !scan_cycle_clk_prev) begin
-        ui_in_reg <= ui_in;
-        ui_in_prev_reg <= ui_in_reg;
-      end
       if (eeprom_read_ready) begin
         start_addr[9:8] <= (eeprom_addr_read == 0) ? eeprom_read_buf[1:0] : start_addr[9:8];
         start_addr[7:0] <= (eeprom_addr_read == 1) ? eeprom_read_buf : start_addr[7:0];

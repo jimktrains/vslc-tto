@@ -18,8 +18,8 @@ INSTR_RESET_TIMER = 0x30
 INSTR_NOP = 0xff
 INSTR_CLR = 0xf0
 INSTR_SETALL = 0xf1
-INSTR_RISING     = lambda reg : 0b11100000 + reg
-INSTR_FALLING    = lambda reg : 0b11101000 + reg
+INSTR_RISING     = lambda reg : 0b11000000 + reg
+INSTR_FALLING    = lambda reg : 0b11010000 + reg
 INSTR_SWAP = 0b11110010
 INSTR_ROT  = 0b11110011
 
@@ -173,7 +173,7 @@ EEPROM_COPI = 0;
 EEPROM_CIPO = 0;
 EEPROM_CS = 2;
 STACK_OUTPUT = 3;
-TOS_OUPUT = 6;
+TOS_OUPUT = 4;
 TIMER_OUTPUT = 7;
 
 
@@ -432,6 +432,8 @@ async def test_project(dut):
                 read_stack = await write8(dut, m)
                 read_stack = await write8(dut, INSTR_NOP)
                 tos = ((dut.uio_out.value[7-TOS_OUPUT]) & 0x1)
+                if tos != expected:
+                    dut._log.info(f"      {tos=} {expected=}")
                 assert tos == expected
     for i in range(8):
         for j in [1, 0]:
@@ -449,6 +451,8 @@ async def test_project(dut):
                 read_stack = await write8(dut, m)
                 read_stack = await write8(dut, INSTR_NOP)
                 tos = ((dut.uio_out.value[7-TOS_OUPUT]) & 0x1)
+                if tos != expected:
+                    dut._log.info(f"      {tos=} {expected=}")
                 assert tos == expected
 
         await ClockCycles(dut.clk, 1)
