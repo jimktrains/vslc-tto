@@ -15,9 +15,10 @@ PROJECT_SOURCES = $(SRC_DIR)/tt_um_jimktrains_vslc_icebreaker.v \
 									$(SRC_DIR)/tt_um_jimktrains_vslc_timer.v \
 									$(SRC_DIR)/tt_um_jimktrains_vslc.v
 
-harden: runs/wokwi/final/pnl/tt_um_jimktrains_vslc.pnl.v
 
-runs/wokwi/final/pnl/tt_um_jimktrains_vslc.pnl.v:
+runs/wokwi/final/pnl/tt_um_jimktrains_vslc.pnl.v: harden
+
+harden:
 	tt/tt_tool.py --create-user-config
 	tt/tt_tool.py --harden --openlane2
 	tt/tt_tool.py --create-png
@@ -32,7 +33,6 @@ test:
 summary: runs/wokwi/final/pnl/tt_um_jimktrains_vslc.pnl.v
 	./summary.sh
 
-.PHONY: test harden clean
 
 icebreaker: $(SUBDIRPROJ).rpt $(SUBDIRPROJ).bin
 
@@ -75,3 +75,5 @@ clean:
 
 write-eeprom:
 	minipro -p 25LC080D -w examples/prog1.eeprom.bin
+
+.PHONY: test harden clean
