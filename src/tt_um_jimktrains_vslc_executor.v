@@ -128,7 +128,7 @@ module tt_um_jimktrains_vslc_executor(
         stack[15] <= instr_clr ? 0 : (
                      instr_setall ? 1 : (
                      shift_left_1 ? stack[14] : (
-                     shift_right_1 ? 0 : stack[15])));
+                     shift_right_1 ? stack[0] : stack[15])));
         stack[14:3] <= instr_clr ? 12'b0 : (
                        instr_setall ? 12'hFFF : (
                        shift_left_1 ? stack[13:2] : (
@@ -153,9 +153,6 @@ module tt_um_jimktrains_vslc_executor(
         if (!keepval) begin
           if (sfrreg) sfr[regid] <= val;
           else uo_out_reg[regid] <= val;
-        end else begin
-          sfr <= sfr;
-          uo_out_reg <= uo_out_reg;
         end
       end
     end

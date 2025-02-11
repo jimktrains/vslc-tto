@@ -139,9 +139,8 @@ assign addr_strobe = eeprom_read_ready;
   assign auto_scan_cycle = eeprom_restart_read;
 
   reg scan_cycle_trigger_in_reg;
-  wire scan_cycle_clk;
   assign scan_cycle_clk_w = scan_cycle_clk;
-  assign scan_cycle_clk = auto_scan_cycle || scan_cycle_trigger_in_reg;
+  reg scan_cycle_clk;
   reg scan_cycle_clk_prev;
 
   assign instr_ready = eeprom_read_ready && (eeprom_addr_read > 3);
@@ -166,6 +165,7 @@ assign addr_strobe = eeprom_read_ready;
       ui_in_reg <= ui_in;
       ui_in_prev_reg <= ui_in;
     end else begin
+      scan_cycle_clk <= auto_scan_cycle; // || scan_cycle_trigger_in_reg;
       scan_cycle_clk_prev <= scan_cycle_clk;
       if (scan_cycle_clk && !scan_cycle_clk_prev) begin
         ui_in_reg <= ui_in;

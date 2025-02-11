@@ -55,7 +55,8 @@ assign LED4 = uo_out[3];
 assign LED5 = uo_out[4];
 assign LEDR_N = !uo_out[5];
 assign LEDG_N = !uo_out[6];
-assign LED_BLU_N = !uo_out[7];
+// assign LED_BLU_N = !uo_out[7];
+assign LED_BLU_N = BTN_N;
 
 assign uio[0] = uio_oe[0] ? uio_out[0] : 1'bz;
 assign uio[1] = uio_oe[1] ? uio_out[1] : 1'bz;
@@ -79,12 +80,21 @@ wire ena = 1;
 reg [31:0]counter = 0;
 
 reg rst_n = 0;
-assign LED_GRN_N = BTN_N;//counter[23];
-assign LED_RED_N = 1;
+assign LED_GRN_N = !uo_out[7];
+assign LED_RED_N = !scan_cycle_clk;
 
 reg a,b,c,d,e,f,g, en1, en2, dp;
 
-assign {P1A1, FLASH_IO0, P1A2, P1A3, P1A4, P1A7, P1A8, P1A9, P1A10, FLASH_IO1} =  {en1, en2, a,f,b,g,c,d,e,dp};
+// assign {P1A1, FLASH_IO0, P1A2, P1A3, P1A4, P1A7, P1A8, P1A9, P1A10, FLASH_IO1} =  {en1, en2, a,f,b,g,c,d,e,dp};
+assign P1A1 = uo_out[0];
+assign P1A2 = uo_out[1];
+assign P1A3 = uo_out[2];
+assign P1A4 = uo_out[3];
+
+assign P1A7 = uo_out[4];
+assign P1A8 = uo_out[5];
+assign P1A9 = uo_out[6];
+assign P1A10= uo_out[7];
 
 tt_um_jimktrains_vslc_core core(
   ui_in,
@@ -95,7 +105,7 @@ tt_um_jimktrains_vslc_core core(
   ena,
   CLK,
   rst_n,
-  8,
+  4,
   20,
   ledout,
   addr_strobe,
@@ -107,8 +117,8 @@ wire scan_cycle_clk;
 always @(posedge CLK) begin
   counter <= counter + 1;
   rst_n <= rst_n ? rst_n : counter < 8;
-  if (!counter[6]) {en1, en2, a,b,c,d,e,f,g,dp} <= {1'b0,1'b1,encode7seg({4'b0, ledout[3:0]}), addr_strobe};
-  else {en1, en2, a,b,c,d,e,f,g, dp} <= {1'b1,1'b0,encode7seg({4'b0, ledout[7:4]}), scan_cycle_clk};
+  //if (!counter[6]) {en1, en2, a,b,c,d,e,f,g,dp} <= {1'b0,1'b1,encode7seg({4'b0, ledout[3:0]}), addr_strobe};
+  //else {en1, en2, a,b,c,d,e,f,g, dp} <= {1'b1,1'b0,encode7seg({4'b0, ledout[7:4]}), scan_cycle_clk};
 end
 
   function [6:0]encode7seg(input [7:0]chr);
