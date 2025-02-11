@@ -12,29 +12,30 @@
 .define t2 s6
 .define t3 s7
 
-PUSH t0 ; t0
-DUP ; t0 t0
-FALLING i3 ; a0 t0 t0
-DUP ; a0 a0 t0 t0
-ROT ; t0 a0 a0 t0
-XOR ; r0 a0 t0
-ROT ; a0 t0 r0
-AND ; c0 r0
+RISING i2
 
-DUP ; c0 c0 r0
-PUSH t1 ; t1 c0 c0 r0
-DUP ;  t1 t1 c0 c0 r0
-ROT ; c0 t1 t1 c0 r0
-XOR ; r1 t1 c0 r0
-ROT ; t1 c0 r1 r0
-AND ; c1 r1 r0
+DUP 
+PUSH t0
+DUP 
+ROT 
+XOR 
+POP t0
+AND 
+
+DUP 
+PUSH t1
+DUP 
+ROT 
+XOR 
+POP t1
+AND 
 
 DUP 
 PUSH t2
 DUP 
 ROT 
 XOR 
-ROT 
+POP t2
 AND 
 
 DUP 
@@ -42,17 +43,10 @@ PUSH t3
 DUP 
 ROT 
 XOR 
-ROT 
-AND ; c3 r3 r2 r1 r0
-
-; I can't seem to figure out how to do any of this without registers :(
-DROP
-POP t0
-POP t1
-POP t2
 POP t3
+AND 
 
-;.logic (~t2 & ~t0) | (~t3 & t1) | (~t3 & t2 & t0) | (t3 & ~t2 & ~t1) | (t3 & ~t0) | (t2 & t1)
+.logic (~t2 & ~t0) | (~t3 & t1) | (~t3 & t2 & t0) | (t3 & ~t2 & ~t1) | (t3 & ~t0) | (t2 & t1)
 POP segA
 
 .logic (~t3 & ~t1 & ~t0) | (~t3 & t1 & t0) | (~t2 & ~t0) | (t3 & ~t1 & t0) | (~t3 & ~t2)
@@ -69,5 +63,6 @@ POP segE
 
 .logic (~t1 & ~t0) | (~t3 & t2 & ~t1) | (t2 & ~t0) | (t3 & ~t2) | (t3 & t1)
 POP segF
+
 .logic (~t2 & t1) | (t3 & ~t2) | (~t3 & t2 & ~t1) | (t1 & ~t0) | (t3 & t0)
 pop segG
