@@ -5,11 +5,7 @@
 
 `default_nettype none
 
-module tt_um_jimktrains_vslc_core #(
-  parameter SPI_CLK_DIV = 3,
-  parameter TIMER_CLK_DIV = 15,
-  parameter SERVO_CLK_DIV = 10
-)(
+module tt_um_jimktrains_vslc_core (
   input  wire [7:0] ui_in,
   output wire [7:0] uo_out,
   input  wire [7:0] uio_in,
@@ -19,9 +15,10 @@ module tt_um_jimktrains_vslc_core #(
   input  wire       clk,
   input  wire       rst_n,
   output wire addr_strobe,
-  output wire scan_cycle_clk_w
+  output wire scan_cycle_clk_w,
+  output wire [15:0]stack
 );
-assign addr_strobe = eeprom_read_ready;
+  assign addr_strobe = eeprom_read_ready;
   wire instr_ready;
 
   wire [7:0] eeprom_read_buf;
@@ -46,7 +43,11 @@ assign addr_strobe = eeprom_read_ready;
   reg [15:0] counter;
 
   // I think that this is frowned upon and actually creates multiple
-  // clock domains.
+  // clock domains. However, everything "below" this module uses this
+  // as it's primary clock.
+  //
+  // The only exception is that counter is used to derive some other
+  // internal clock strobes.
   wire spi_clk   = spi_clk_div == 0 ? clk : counter[spi_clk_div-1];
   wire eeprom_rw;
 
@@ -75,7 +76,8 @@ assign addr_strobe = eeprom_read_ready;
     eeprom_read_buf,
     ui_in_reg_w,
     ui_in_prev_reg_w,
-    uo_out
+    uo_out,
+    stack
   );
 
   wire _unused = ena;
@@ -149,7 +151,7 @@ assign addr_strobe = eeprom_read_ready;
       ui_in_reg <= ui_in;
       ui_in_prev_reg <= ui_in;
       scan_cycle_clk_prev <= 0;
-      spi_clk_div <= SPI_CLK_DIV;
+      spi_clk_div <= 3;
     end else begin
       counter <= counter + 1;
       scan_cycle_clk <= auto_scan_cycle || scan_cycle_trigger_in_reg;

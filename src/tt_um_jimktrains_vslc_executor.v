@@ -5,10 +5,7 @@
 
 `default_nettype none
 
-module tt_um_jimktrains_vslc_executor #(
-  parameter TIMER_CLK_DIV = 15,
-  parameter SERVO_CLK_DIV = 10
-)(
+module tt_um_jimktrains_vslc_executor (
   input clk,
   input [15:0]counter,
   input instr_ready,
@@ -16,12 +13,14 @@ module tt_um_jimktrains_vslc_executor #(
   input [7:0] instr,
   input [7:0] ui_in,
   input [7:0] ui_in_prev,
-  output [7:0] uo_out
+  output [7:0] uo_out,
+  output [15:0] stack_out
 );
+  assign stack_out = stack;
   reg [4:0] timer_clk_div;
   reg [4:0] servo_clk_div;
-  // I think that this is frowned upon and actually creates multiple
-  // clock domains.
+  // These are used as clock strobes, and not as part of an always
+  // block's sensitivities.
   wire timer_clk = timer_clk_div == 0 ? clk : counter[timer_clk_div-1];
   wire servo_clk = servo_clk_div == 0 ? clk : counter[servo_clk_div-1];
 
@@ -50,6 +49,7 @@ module tt_um_jimktrains_vslc_executor #(
   assign servo_val = sfr[SFR_SERVO_VAL];
 
   tt_um_jimktrains_vslc_timer tim0(
+    clk,
     timer_clk,
     rst_n,
     timer_period_a,
@@ -59,6 +59,7 @@ module tt_um_jimktrains_vslc_executor #(
   );
 
   tt_um_jimktrains_vslc_servo srv0(
+    clk,
     servo_clk,
     rst_n,
     servo_set_val,
@@ -164,8 +165,8 @@ module tt_um_jimktrains_vslc_executor #(
       servo_set_val <= 23;
       sfr <= 0;
       exec_state <= EXEC_STATE_INSTR;
-      timer_clk_div <= TIMER_CLK_DIV;
-      servo_clk_div <= SERVO_CLK_DIV;
+      timer_clk_div <= 14;
+      servo_clk_div <= 10;
     end else begin
       prev_instr <= exec_state == EXEC_STATE_INSTR ? instr : prev_instr;
       exec_state <= exec_state == EXEC_STATE_EXTRA_BYTE_1 ? EXEC_STATE_INSTR : (

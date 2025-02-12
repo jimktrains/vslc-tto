@@ -5,11 +5,7 @@
 
 `default_nettype none
 
-module tt_um_jimktrains_vslc_icebreaker #(
-  parameter SPI_CLK_DIV = 3,
-  parameter TIMER_CLK_DIV = 15,
-  parameter SERVO_CLK_DIV = 10
-)(
+module tt_um_jimktrains_vslc_icebreaker (
 	input  CLK,
 	input  BTN_N,
   input  BTN1,
@@ -103,11 +99,9 @@ assign P1A8 = uo_out[5];
 assign P1A9 = uo_out[6];
 assign P1A10= uo_out[7];
 
-tt_um_jimktrains_vslc_core #(
-  .SPI_CLK_DIV(SPI_CLK_DIV),
-  .TIMER_CLK_DIV(TIMER_CLK_DIV),
-  .SERVO_CLK_DIV(SERVO_CLK_DIV)
-) core (
+wire [15:0] stack;
+
+tt_um_jimktrains_vslc_core core (
   ui_in,
   uo_out,
   uio_in,
@@ -117,7 +111,8 @@ tt_um_jimktrains_vslc_core #(
   CLK,
   rst_n,
   addr_strobe,
-  scan_cycle_clk
+  scan_cycle_clk,
+  stack
 );
 
 wire scan_cycle_clk;

@@ -25,14 +25,11 @@ module tt_um_jimktrains_vslc
 wire addr_strobe;
 wire [1:0]_unused;
 wire scan_cycle_clk;
+wire [15:0]stack;
 
 assign _unused = {addr_strobe, scan_cycle_clk};
 
-tt_um_jimktrains_vslc_core #(
-  .SPI_CLK_DIV(SPI_CLK_DIV),
-  .TIMER_CLK_DIV(TIMER_CLK_DIV),
-  .SERVO_CLK_DIV(SERVO_CLK_DIV)
-) core (
+tt_um_jimktrains_vslc_core core (
   ui_in,
   uo_out,
   uio_in,
@@ -42,6 +39,7 @@ tt_um_jimktrains_vslc_core #(
   clk,
   rst_n,
   addr_strobe,
-  scan_cycle_clk
+  scan_cycle_clk,
+  stack
 );
 endmodule

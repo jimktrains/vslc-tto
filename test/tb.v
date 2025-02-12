@@ -27,21 +27,14 @@ module tb ();
   wire VGND = 1'b0;
 `endif
 
-  wire [15:0]stack;
-  wire tos;
-  assign stack = \user_project.core.exec.stack;
-  assign tos = \user_project.core.exec.stack[0];
-  // Replace tt_um_jimktrains_vslc with your module name:
-  tt_um_jimktrains_vslc #(
-    .SPI_CLK_DIV(0),
-    .TIMER_CLK_DIV(0),
-    .SERVO_CLK_DIV(0)
-  ) user_project (
+  wire [15:0]stack = user_project.core.exec.stack;
+  wire tos = stack[0];
 
-      // Include power ports for the Gate Level test:
+  tt_um_jimktrains_vslc user_project (
+
 `ifdef GL_TEST
-      .VPWR(VPWR),
-      .VGND(VGND),
+   .VPWR(VPWR),
+   .VGND(VGND),
 `endif
 
       .ui_in  (ui_in),    // Dedicated inputs

@@ -5,6 +5,8 @@ import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles
 
+SPI_CLOCK_DIV = 2**3;
+
 IO_I = 0
 IO_O = 1
 
@@ -334,7 +336,7 @@ for j in [True, False]:
 async def read8(dut):
     r = 0x0
     for i in range(8):
-        await ClockCycles(dut.clk, 1, rising=True)
+        await ClockCycles(dut.clk, SPI_CLOCK_DIV *1, rising=True)
         r += ((dut.uio_out.value[7-EEPROM_COPI]) & 0x01) << (7-i)
     return r
 
@@ -352,26 +354,26 @@ async def write8(dut, v):
         # Do a cycle every instruction
         x |= ((i > 5) and (i < 7)) << CYCLE_START
         dut.uio_in.value = x
-        await ClockCycles(dut.clk, 1, rising=False)
+        await ClockCycles(dut.clk, SPI_CLOCK_DIV *1, rising=False)
 
 async def do_reset(dut):
     # Set the clock period to 10 us (100 KHz)
     clock = Clock(dut.clk, 10, units="us")
     cocotb.start_soon(clock.start())
-    await ClockCycles(dut.clk, 1)
+    await ClockCycles(dut.clk, SPI_CLOCK_DIV *1)
 
     # Reset
-    dut._log.info(f"{len(MEMORY)=}")
+    dut._log.info(f"{len(MEMORY)=} {SPI_CLOCK_DIV=}")
     dut._log.info("Reset")
     dut.ena.value = 1
     dut.ui_in.value = 2
     dut.uio_in.value = 0
     dut.rst_n.value = 0
-    await ClockCycles(dut.clk, 1)
+    await ClockCycles(dut.clk, SPI_CLOCK_DIV *1)
     dut._log.info(f"{dut.uio_out.value=}")
     #assert dut.uio_out.value[7-EEPROM_CS]
     dut.rst_n.value = 1
-    await ClockCycles(dut.clk, 1)
+    await ClockCycles(dut.clk, SPI_CLOCK_DIV *1)
     dut._log.info(f"Reset Done")
     dut._log.info(f"Reading READ Command")
     assert (await read8(dut)) == EEPROM_READ_COMMAND
@@ -379,7 +381,6 @@ async def do_reset(dut):
     dut._log.info(f"Reading Address")
     assert (await read8(dut)) == 0
     assert (await read8(dut)) == 0
-    await ClockCycles(dut.clk, 1)
 
 @cocotb.test()
 async def test_project(dut):
@@ -399,10 +400,10 @@ async def test_project(dut):
         await write8(dut, m)
         tos = dut.tos.value
         read_stack = dut.stack.value
-        dut._log.info(f"  {read_stack=} {tos=}")
         if last_a is not None:
             res = last_a(dut)
             if not res:
+                dut._log.info(f"  {read_stack=} {tos=}")
                 dut._log.info(f"  {dut.uio_out.value=}")
                 dut._log.info(f"  {dut.uo_out.value=}")
                 dut._log.info(f"  {last_a=}")
@@ -417,14 +418,14 @@ async def test_project(dut):
                 dut._log.info(f"#### Testing RISING({i}) {j} to {k} => {expected}")
                 adj_addr += 1
                 dut.ui_in.value = (j << i)
-                read_stack = await write8(dut, INSTR_NOP)
+                await write8(dut, INSTR_NOP)
 
                 dut.ui_in.value = (k << i)
                 m = INSTR_RISING(i)
                 adj_addr += 1
                 dut._log.info(f"      {adj_addr=} {m=:02x} {j<<i=} {k<<i=}")
-                read_stack = await write8(dut, m)
-                read_stack = await write8(dut, INSTR_NOP)
+                await write8(dut, m)
+                await write8(dut, INSTR_NOP)
                 tos = dut.tos.value
                 if tos != expected:
                     dut._log.info(f"      {tos=} {expected=}")
@@ -449,7 +450,6 @@ async def test_project(dut):
                     dut._log.info(f"      {tos=} {expected=}")
                 assert tos == expected
 
-        await ClockCycles(dut.clk, 1)
 
 @cocotb.test()
 async def test_addressing(dut):
@@ -475,8 +475,7 @@ async def test_addressing(dut):
     await write8(dut, MEMORY[5])
     await write8(dut, MEMORY[6])
     dut._log.info(f"Got to the end of the program")
-    await ClockCycles(dut.clk, 1)
-    await ClockCycles(dut.clk, 1)
+    await ClockCycles(dut.clk, SPI_CLOCK_DIV *1)
     assert not dut.uo_out.value[7-0]
 
     dut._log.info(f"Reading READ Command")
@@ -488,7 +487,6 @@ async def test_addressing(dut):
     assert (await read8(dut)) == 0
     assert (await read8(dut)) == 5
     dut._log.info(f"verified that it's running where it left of!")
-    await ClockCycles(dut.clk, 1, rising=False)
     dut._log.info(f"{MEMORY[5]=:02x}")
     await write8(dut, MEMORY[5])
     dut._log.info(f"{MEMORY[6]=:02x}")
