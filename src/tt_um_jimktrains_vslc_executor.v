@@ -5,10 +5,12 @@
 
 `default_nettype none
 
-module tt_um_jimktrains_vslc_executor(
+module tt_um_jimktrains_vslc_executor #(
+  parameter TIMER_CLK_DIV = 7,
+  parameter SERVO_CLK_DIV = 5
+)(
   input clk,
-  input timer_clk,
-  input servo_clk,
+  input [31:0]counter,
   input instr_ready,
   input rst_n,
   input [7:0] instr,
@@ -17,6 +19,13 @@ module tt_um_jimktrains_vslc_executor(
   output [7:0] uo_out,
   output [15:0] stack_o
 );
+  reg [7:0] timer_clk_div;
+  reg [7:0] servo_clk_div;
+  // I think that this is frowned upon and actually creates multiple
+  // clock domains.
+  wire timer_clk = timer_clk_div == 0 ? clk : counter[timer_clk_div-1];
+  wire servo_clk = servo_clk_div == 0 ? clk : counter[servo_clk_div-1];
+
   reg [15:0] timer_period_a;
   reg [15:0] timer_period_b;
   wire timer_enabled;
@@ -79,7 +88,7 @@ module tt_um_jimktrains_vslc_executor(
   wire instr_logic = instr[7:6] == 2;
   wire instr_other = instr[7:6] == 3;
 
-  wire [2:0]regid = instr[2:0];
+  wire [2:0]regid = exec_state == EXEC_STATE_INSTR ? instr[2:0] : prev_instr[2:0];
   wire instr_push = instr[5:4] == 0;
   wire ioreg = instr_push && instr[3];
   wire sfrreg = instr_reg_b;
@@ -92,6 +101,8 @@ module tt_um_jimktrains_vslc_executor(
   wire push_result = sfrreg ? sfr[sfrid] :(
                      ioreg ? uo_out[regid] : ui_in[regid]);
 
+  wire instr_sparam = instr_other && instr[5:4] == 2'b10;
+  wire instr_sparam_expected = instr[3];
   // Every logic operation conceptually pops once or twice, or we pop none
   // for pushing constant data only.
   // However, since we then push  two results only if we've popped twice or
@@ -141,6 +152,12 @@ module tt_um_jimktrains_vslc_executor(
               instr_set ? {1'b1, 1'b0} : (
               instr_reset ? {1'b0, 1'b0} : {1'b0, 1'b1}))));
 
+  reg [7:0]prev_instr;
+  reg [1:0]exec_state;
+  localparam EXEC_STATE_INSTR = 0;
+  localparam EXEC_STATE_EXTRA_BYTE_1 = 1;
+  localparam EXEC_STATE_EXTRA_BYTE_2 = 2;
+
   always @(negedge clk) begin
     if (!rst_n) begin
       stack <= 16'b0;
@@ -151,7 +168,15 @@ module tt_um_jimktrains_vslc_executor(
       servo_reset_val <= 950;
       servo_set_val <= 188;
       sfr <= 0;
+      exec_state <= EXEC_STATE_INSTR;
+      timer_clk_div <= TIMER_CLK_DIV;
+      servo_clk_div <= SERVO_CLK_DIV;
     end else begin
+      prev_instr <= exec_state == EXEC_STATE_INSTR ? instr : prev_instr;
+      exec_state <= exec_state == EXEC_STATE_EXTRA_BYTE_1 ? EXEC_STATE_EXTRA_BYTE_2 : (
+                    exec_state == EXEC_STATE_EXTRA_BYTE_2 ? EXEC_STATE_INSTR : (
+                    instr_sparam && (tos == instr_sparam_expected) ? EXEC_STATE_EXTRA_BYTE_1 : EXEC_STATE_INSTR));
+
       if (timer_enabled) begin
         sfr[SFR_TIMER_OUTPUT] <= timer_output;
         if (sfr[SFR_TIMER_OUTPUT_ENABLE]) begin
@@ -162,7 +187,31 @@ module tt_um_jimktrains_vslc_executor(
         sfr[SFR_SERVO_OUTPUT] <= servo_output;
         uo_out_reg[7] <= servo_output;
       end
-      if (instr_ready) begin
+      if (exec_state == EXEC_STATE_EXTRA_BYTE_1) begin
+        case (regid)
+          0: begin end // Not Implemented
+          1: begin end // It's only 8bits
+          2: timer_period_a[15:8] <= instr;
+          3: timer_period_b[15:8] <= instr;
+          4: begin end // It's only 8bits
+          5: servo_freq_val[15:8] <= instr;
+          6: servo_reset_val[15:8] <= instr;
+          7: servo_reset_val[15:8] <= instr;
+          default: begin end
+        endcase
+      end else if (exec_state == EXEC_STATE_EXTRA_BYTE_2) begin
+        case (regid)
+          0: begin end // Not Implemented
+          1: timer_clk_div <= instr;
+          2: timer_period_a[7:0] <= instr;
+          3: timer_period_b[7:0] <= instr;
+          4: servo_clk_div <= instr;
+          5: servo_freq_val[7:0] <= instr;
+          6: servo_reset_val[7:0] <= instr;
+          7: servo_reset_val[7:0] <= instr;
+          default: begin end
+        endcase
+      end else if (instr_ready) begin
         stack[15] <= instr_clr ? 0 : (
                      instr_setall ? 1 : (
                      shift_left_1 ? stack[14] : (
@@ -186,8 +235,6 @@ module tt_um_jimktrains_vslc_executor(
                     has_1_result ? res0 : (
                     shift_left_1 ? 0 : (
                     shift_right_1 ? stack[1] : stack[0]))));
-
-
         if (!keepval) begin
           if (sfrreg) sfr[sfrid] <= val;
           else uo_out_reg[regid] <= val;

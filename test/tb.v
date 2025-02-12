@@ -28,7 +28,9 @@ module tb ();
 `endif
 
   wire [15:0]stack;
+  wire tos;
   assign stack = user_project.core.stack;
+  assign tos = user_project.core.stack[0];
   // Replace tt_um_jimktrains_vslc with your module name:
   tt_um_jimktrains_vslc #(
     .SPI_CLK_DIV(0),

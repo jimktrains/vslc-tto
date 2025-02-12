@@ -44,15 +44,11 @@ assign addr_strobe = eeprom_read_ready;
   assign eeprom_hold_n_w = eeprom_hold_n;
 
   reg [7:0] spi_clk_div;
-  reg [7:0] timer_clk_div;
-  reg [7:0] servo_clk_div;
   reg [31:0] counter;
 
   // I think that this is frowned upon and actually creates multiple
   // clock domains.
   wire spi_clk   = spi_clk_div == 0 ? clk : counter[spi_clk_div-1];
-  wire timer_clk = timer_clk_div == 0 ? clk : counter[timer_clk_div-1];
-  wire servo_clk = servo_clk_div == 0 ? clk : counter[servo_clk_div-1];
   wire eeprom_rw;
 
   tt_um_jimktrains_vslc_eeprom_reader eereader(
@@ -74,8 +70,7 @@ assign addr_strobe = eeprom_read_ready;
 
   tt_um_jimktrains_vslc_executor exec(
     spi_clk,
-    timer_clk,
-    servo_clk,
+    counter,
     instr_ready,
     rst_n_sync,
     eeprom_read_buf,
@@ -161,8 +156,6 @@ assign addr_strobe = eeprom_read_ready;
       ui_in_prev_reg <= ui_in;
       scan_cycle_clk_prev <= 0;
       spi_clk_div <= SPI_CLK_DIV;
-      timer_clk_div <= TIMER_CLK_DIV;
-      servo_clk_div <= SERVO_CLK_DIV;
     end else begin
       counter <= counter + 1;
       scan_cycle_clk <= auto_scan_cycle || scan_cycle_trigger_in_reg;

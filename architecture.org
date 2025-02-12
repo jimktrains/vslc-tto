@@ -58,8 +58,8 @@ OVERNOT     1010 0101
 RISING  reg 1100 IRRR XXXX XXXX XXXX XXXX
 FALLING reg 1101 IRRR XXXX XXXX XXXX XXXX
 
-STORE0 parm 1110 0PPP
-STORE1 parm 1110 1PPP
+SPARAM0 parm 1110 0PPP
+SPARAM1 parm 1110 1PPP
 
 CLR         1111 0000
 SETALL      1111 0001
@@ -76,14 +76,14 @@ NOP         1111 1111
    - 0x4 Servo Output
 
 ** Parameter
-   - 0x0 SPI Clock Divider
+   - 0x0 SPI Clock Divider (Updating Not Implemented)
    - 0x1 Timer0 Clock Divider
    - 0x2 Timer0 Counter A
    - 0x3 Timer0 Counter B
    - 0x4 Servo0 Clock Divider
-   - 0x4 Servo0 Frequency Value
-   - 0x5 Servo0 Reset Value
-   - 0x6 Servo0 Set Value
+   - 0x5 Servo0 Frequency Value
+   - 0x6 Servo0 Reset Value
+   - 0x7 Servo0 Set Value
 
 * Interface
 ** KeyPad
