@@ -52,6 +52,7 @@ module tt_um_jimktrains_vslc_core (
   wire eeprom_rw;
 
   tt_um_jimktrains_vslc_eeprom_reader eereader(
+    clk,
     spi_clk,
     rst_n_sync,
     eeprom_restart_read,
@@ -178,7 +179,10 @@ module tt_um_jimktrains_vslc_core (
         end_addr[7:0] <= (eeprom_addr_read == 3) ? eeprom_read_buf : end_addr[7:0];
 
         eeprom_restart_read <= end_addr != 10'b0 && eeprom_addr_read >= end_addr;
+      end else begin
+        eeprom_restart_read <= eeprom_restart_read;
       end
+
     end
   end
 endmodule

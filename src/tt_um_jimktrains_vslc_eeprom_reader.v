@@ -7,6 +7,7 @@
 
 module tt_um_jimktrains_vslc_eeprom_reader(
   input clk,
+  input spi_clk,
   input rst_n,
   input goto_address,
   input [9:0]address,
@@ -47,12 +48,17 @@ module tt_um_jimktrains_vslc_eeprom_reader(
 
   assign rw = comm_state != COMM_READ;
 
+  reg spi_clk_prev;
+
+  wire spi_clk_posedge = !spi_clk_prev && spi_clk;
+  wire spi_clk_negedge = spi_clk_prev && !spi_clk;
+
   always @(negedge clk) begin
     if (!rst_n) begin
       comm_state <= COMM_RESET;
       goto_addr_prev <= 0;
       bit_counter <= 7;
-    end else if (hold_n) begin
+    end else if (hold_n && spi_clk_negedge) begin
       if (!goto_addr_prev && goto_address) {comm_state, bit_counter} <= {COMM_RESET, 4'h7};
       else
         casez ({comm_state, bit_counter})
@@ -67,10 +73,11 @@ module tt_um_jimktrains_vslc_eeprom_reader(
     end
   end
   always @(posedge clk) begin
+    spi_clk_prev <= spi_clk;
     if (!rst_n) begin
       read_buf <= 0;
       address_reading <= address;
-    end else if (hold_n) begin
+    end else if (hold_n && spi_clk_posedge) begin
       if (comm_state == COMM_RESET) read_buf <= 0;
       else read_buf[bit_counter[2:0]] <= cipo;
 
