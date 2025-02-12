@@ -8,15 +8,15 @@
 module tt_um_jimktrains_vslc_timer(
   input clk,
   input rst_n,
-  input [7:0] timer_period_a,
-  //input [7:0] timer_period_b,
+  input [15:0] timer_period_a,
+  input [15:0] timer_period_b,
   input timer_enabled,
   output timer_output
 );
-  reg [7:0] timer_counter;
+  reg [15:0] timer_counter;
   reg timer_phase;
   reg timer_output_r;
-  wire [7:0]timer_period_b = timer_period_a;
+  // wire [15:0]timer_period_b = timer_period_a;
 
   assign timer_output = timer_output_r;
 
@@ -27,11 +27,11 @@ module tt_um_jimktrains_vslc_timer(
       timer_counter <= 0;
     end else begin
       if (timer_phase == 1'b0 && timer_counter == timer_period_a) begin
-        timer_counter <= 8'b0;
+        timer_counter <= 16'b0;
         timer_phase <= 1'b1;
         timer_output_r <= ~timer_output_r;
       end else if (timer_phase == 1'b1 && timer_counter == timer_period_b) begin
-        timer_counter <= 8'b0;
+        timer_counter <= 16'b0;
         timer_phase <= 1'b0;
         timer_output_r <= timer_period_b == 0 ? timer_output : ~timer_output;
       end else begin
