@@ -5,7 +5,11 @@
 
 `default_nettype none
 
-module tt_um_jimktrains_vslc_icebreaker (
+module tt_um_jimktrains_vslc_icebreaker #(
+  parameter SPI_CLK_DIV = 3,
+  parameter TIMER_CLK_DIV = 7,
+  parameter SERVO_CLK_DIV = 5
+)(
 	input  CLK,
 	input  BTN_N,
   input  BTN1,
@@ -73,6 +77,11 @@ assign uio_in[3] = uio[3];
 assign uio_in[4] = uio[4];
 assign uio_in[5] = uio[5];
 assign uio_in[6] = uio[6];
+// I made a solder-bridge to ground on the board, but it's still high
+// constantly. I'm just hard-coding this to 0 to solve the problem.
+// I need to have this accessible for the testbench, although I just
+// realized I can access internal variables in the dut, so that might
+// be the best option.
 assign uio_in[7] = 0;
 
 wire ena = 1;
@@ -94,7 +103,11 @@ assign P1A8 = uo_out[5];
 assign P1A9 = uo_out[6];
 assign P1A10= uo_out[7];
 
-tt_um_jimktrains_vslc_core core(
+tt_um_jimktrains_vslc_core #(
+  .SPI_CLK_DIV(SPI_CLK_DIV),
+  .TIMER_CLK_DIV(TIMER_CLK_DIV),
+  .SERVO_CLK_DIV(SERVO_CLK_DIV)
+) core (
   ui_in,
   uo_out,
   uio_in,
@@ -103,10 +116,6 @@ tt_um_jimktrains_vslc_core core(
   ena,
   CLK,
   rst_n,
-  3,
-  7,
-  5,
-  ledout,
   addr_strobe,
   scan_cycle_clk
 );

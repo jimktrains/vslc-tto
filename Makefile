@@ -17,12 +17,13 @@ PROJECT_SOURCES = $(SRC_DIR)/tt_um_jimktrains_vslc_icebreaker.v \
 									$(SRC_DIR)/tt_um_jimktrains_vslc.v
 
 
-runs/wokwi/final/pnl/tt_um_jimktrains_vslc.pnl.v: harden
-
-harden:
+runs/wokwi/final/pnl/tt_um_jimktrains_vslc.pnl.v: $(PROJECT_SOURCES)
 	tt/tt_tool.py --create-user-config
 	tt/tt_tool.py --harden --openlane2
-	tt/tt_tool.py --create-png
+	tt/tt_tool.py --create-png --create-svg
+	rm *_preview*
+
+harden: runs/wokwi/final/pnl/tt_um_jimktrains_vslc.pnl.v
 
 test-gates: runs/wokwi/final/pnl/tt_um_jimktrains_vslc.pnl.v
 	cp runs/wokwi/final/pnl/tt_um_jimktrains_vslc.pnl.v test/gate_level_netlist.v

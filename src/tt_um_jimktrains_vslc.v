@@ -5,7 +5,12 @@
 
 `default_nettype none
 
-module tt_um_jimktrains_vslc (
+module tt_um_jimktrains_vslc
+#(
+  parameter SPI_CLK_DIV = 3,
+  parameter TIMER_CLK_DIV = 7,
+  parameter SERVO_CLK_DIV = 5
+) (
 
   input  wire [7:0] ui_in,   // Dedicated inputs
   output wire [7:0] uo_out,   // Dedicated outputs
@@ -24,7 +29,11 @@ wire scan_cycle_clk;
 
 assign _unused = {ledout, addr_strobe, scan_cycle_clk};
 
-tt_um_jimktrains_vslc_core c(
+tt_um_jimktrains_vslc_core #(
+  .SPI_CLK_DIV(SPI_CLK_DIV),
+  .TIMER_CLK_DIV(TIMER_CLK_DIV),
+  .SERVO_CLK_DIV(SERVO_CLK_DIV)
+) core (
   ui_in,
   uo_out,
   uio_in,
@@ -33,10 +42,6 @@ tt_um_jimktrains_vslc_core c(
   ena,
   clk,
   rst_n,
-  8'h0,
-  8'h0,
-  8'h0,
-  ledout,
   addr_strobe,
   scan_cycle_clk
 );

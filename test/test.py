@@ -391,7 +391,6 @@ async def do_reset(dut):
 async def test_project(dut):
     dut._log.info("Start")
 
-
     await do_reset(dut)
 
     last_a = None
