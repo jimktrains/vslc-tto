@@ -151,7 +151,7 @@ def process_line(line, line_num):
                 line[1] = defines[line[1]]
 
             if line[1].startswith('S'):
-                reg = 0x40 + int(line[1][1])
+                reg = 0x40 + int(line[1][1], 16)
             elif line[1].startswith('I'):
                 reg = int(line[1][1])
             elif line[1].startswith('O'):

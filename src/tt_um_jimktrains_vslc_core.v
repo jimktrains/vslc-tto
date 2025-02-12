@@ -7,8 +7,8 @@
 
 module tt_um_jimktrains_vslc_core #(
   parameter SPI_CLK_DIV = 3,
-  parameter TIMER_CLK_DIV = 7,
-  parameter SERVO_CLK_DIV = 5
+  parameter TIMER_CLK_DIV = 15,
+  parameter SERVO_CLK_DIV = 10
 )(
   input  wire [7:0] ui_in,
   output wire [7:0] uo_out,
@@ -23,10 +23,9 @@ module tt_um_jimktrains_vslc_core #(
 );
 assign addr_strobe = eeprom_read_ready;
   wire instr_ready;
-  wire [15:0]stack;
 
   wire [7:0] eeprom_read_buf;
-  wire [15:0] eeprom_addr_read;
+  wire [9:0] eeprom_addr_read;
   wire eeprom_read_ready;
 
   reg eeprom_restart_read;
@@ -43,8 +42,8 @@ assign addr_strobe = eeprom_read_ready;
   wire eeprom_hold_n_w;
   assign eeprom_hold_n_w = eeprom_hold_n;
 
-  reg [7:0] spi_clk_div;
-  reg [31:0] counter;
+  reg [3:0] spi_clk_div;
+  reg [15:0] counter;
 
   // I think that this is frowned upon and actually creates multiple
   // clock domains.
@@ -76,8 +75,7 @@ assign addr_strobe = eeprom_read_ready;
     eeprom_read_buf,
     ui_in_reg_w,
     ui_in_prev_reg_w,
-    uo_out,
-    stack
+    uo_out
   );
 
   wire _unused = ena;
@@ -102,23 +100,19 @@ assign addr_strobe = eeprom_read_ready;
   assign uio_oe[SPI_SD]  = eeprom_rw;
   assign uio_oe[EEPROM_HOLD] = 1;
   assign uio_oe[EEPROM_CS] = 1;
-  assign uio_oe[STACK_OUT]  = 1;
+  assign uio_oe[STACK_OUT]  = 0;
   assign uio_oe[SPI_CLK]  = 1;
   assign uio_oe[SCAN_CYCLE_OUT] = 1;
-  assign uio_oe[TOS_OUT] = 1;
+  assign uio_oe[TOS_OUT] = 0;
   assign uio_oe[SCAN_CYCLE_TRIGGER_IN]  = 0;
 
   assign cipo = uio_in[SPI_SD];
   assign uio_out[SPI_SD] = copi;
   assign uio_out[EEPROM_HOLD] = eeprom_hold_n;
-  wire [3:0]stack_out_bit_idx;
-  assign stack_out_bit_idx = {4'h7 - (4'h7 & bit_counter)};
-  wire stack_out_bit;
-  assign stack_out_bit = stack[stack_out_bit_idx];
-  assign uio_out[STACK_OUT] = stack_out_bit;
+  assign uio_out[STACK_OUT] = 1;
   assign uio_out[SPI_CLK]  = spi_clk;
   assign uio_out[SCAN_CYCLE_OUT]  = scan_cycle_clk;
-  assign uio_out[TOS_OUT]  = stack[0];
+  assign uio_out[TOS_OUT]  = 1;
   assign uio_out[SCAN_CYCLE_TRIGGER_IN]  = 0;
   assign scan_cycle_trigger_in = uio_in[SCAN_CYCLE_TRIGGER_IN];
 
@@ -135,7 +129,7 @@ assign addr_strobe = eeprom_read_ready;
   // wire [7:0]instr = {instr_buf, cipo};
 
   reg [9:0]start_addr;
-  wire [15:0] eeprom_start_addr = {6'b0, start_addr};
+  wire [9:0] eeprom_start_addr = start_addr;
   reg [9:0]end_addr;
 
   wire auto_scan_cycle;
@@ -181,7 +175,7 @@ assign addr_strobe = eeprom_read_ready;
         end_addr[9:8] <= (eeprom_addr_read == 2) ? eeprom_read_buf[1:0] : end_addr[9:8];
         end_addr[7:0] <= (eeprom_addr_read == 3) ? eeprom_read_buf : end_addr[7:0];
 
-        eeprom_restart_read <= end_addr != 10'b0 && eeprom_addr_read >= {6'b0, end_addr};
+        eeprom_restart_read <= end_addr != 10'b0 && eeprom_addr_read >= end_addr;
       end
     end
   end

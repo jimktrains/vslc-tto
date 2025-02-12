@@ -8,8 +8,8 @@
 module tt_um_jimktrains_vslc
 #(
   parameter SPI_CLK_DIV = 3,
-  parameter TIMER_CLK_DIV = 7,
-  parameter SERVO_CLK_DIV = 5
+  parameter TIMER_CLK_DIV = 15,
+  parameter SERVO_CLK_DIV = 10
 ) (
 
   input  wire [7:0] ui_in,   // Dedicated inputs
@@ -22,12 +22,11 @@ module tt_um_jimktrains_vslc
   input  wire       rst_n    // reset_n - low to reset
 );
 
-wire [7:0]ledout;
 wire addr_strobe;
-wire [9:0]_unused;
+wire [1:0]_unused;
 wire scan_cycle_clk;
 
-assign _unused = {ledout, addr_strobe, scan_cycle_clk};
+assign _unused = {addr_strobe, scan_cycle_clk};
 
 tt_um_jimktrains_vslc_core #(
   .SPI_CLK_DIV(SPI_CLK_DIV),

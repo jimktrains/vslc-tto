@@ -7,8 +7,8 @@
 
 module tt_um_jimktrains_vslc_icebreaker #(
   parameter SPI_CLK_DIV = 3,
-  parameter TIMER_CLK_DIV = 7,
-  parameter SERVO_CLK_DIV = 5
+  parameter TIMER_CLK_DIV = 15,
+  parameter SERVO_CLK_DIV = 10
 )(
 	input  CLK,
 	input  BTN_N,

@@ -22,6 +22,7 @@ runs/wokwi/final/pnl/tt_um_jimktrains_vslc.pnl.v: $(PROJECT_SOURCES)
 	tt/tt_tool.py --harden --openlane2
 	tt/tt_tool.py --create-png --create-svg
 	rm *_preview*
+	./summary.sh
 
 harden: runs/wokwi/final/pnl/tt_um_jimktrains_vslc.pnl.v
 

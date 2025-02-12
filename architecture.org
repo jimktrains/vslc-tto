@@ -71,9 +71,10 @@ NOP         1111 1111
 ** SFR
    - 0x0 Timer Enable
    - 0x1 Timer Output
-   - 0x2 Servo Enable
+   - 0x2 Servo Enable (always outputs to pin o7)
    - 0x3 Servo Value
    - 0x4 Servo Output
+   - 0x5 Timer Output Enable (Pin o6)
 
 ** Parameter
    - 0x0 SPI Clock Divider (Updating Not Implemented)

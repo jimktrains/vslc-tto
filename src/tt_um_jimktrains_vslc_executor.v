@@ -6,34 +6,33 @@
 `default_nettype none
 
 module tt_um_jimktrains_vslc_executor #(
-  parameter TIMER_CLK_DIV = 7,
-  parameter SERVO_CLK_DIV = 5
+  parameter TIMER_CLK_DIV = 15,
+  parameter SERVO_CLK_DIV = 10
 )(
   input clk,
-  input [31:0]counter,
+  input [15:0]counter,
   input instr_ready,
   input rst_n,
   input [7:0] instr,
   input [7:0] ui_in,
   input [7:0] ui_in_prev,
-  output [7:0] uo_out,
-  output [15:0] stack_o
+  output [7:0] uo_out
 );
-  reg [7:0] timer_clk_div;
-  reg [7:0] servo_clk_div;
+  reg [4:0] timer_clk_div;
+  reg [4:0] servo_clk_div;
   // I think that this is frowned upon and actually creates multiple
   // clock domains.
   wire timer_clk = timer_clk_div == 0 ? clk : counter[timer_clk_div-1];
   wire servo_clk = servo_clk_div == 0 ? clk : counter[servo_clk_div-1];
 
-  reg [15:0] timer_period_a;
-  reg [15:0] timer_period_b;
+  reg [7:0] timer_period_a;
+  //reg [7:0] timer_period_b;
   wire timer_enabled;
   wire timer_output;
 
-  reg [15:0] servo_set_val;
-  reg [15:0] servo_reset_val;
-  reg [15:0] servo_freq_val;
+  reg [4:0] servo_set_val;
+  reg [4:0] servo_reset_val;
+  reg [7:0] servo_freq_val;
   wire servo_enabled;
   wire servo_val;
   wire servo_output;
@@ -45,7 +44,7 @@ module tt_um_jimktrains_vslc_executor #(
   localparam SFR_SERVO_OUTPUT = 4;
   localparam SFR_TIMER_OUTPUT_ENABLE = 5;
 
-  reg [15:0] sfr;
+  reg [9:0] sfr;
   assign timer_enabled = sfr[SFR_TIMER_ENABLE];
   assign servo_enabled = sfr[SFR_SERVO_ENABLE];
   assign servo_val = sfr[SFR_SERVO_VAL];
@@ -54,10 +53,9 @@ module tt_um_jimktrains_vslc_executor #(
     timer_clk,
     rst_n,
     timer_period_a,
-    timer_period_b,
+//    timer_period_b,
     timer_enabled,
-    timer_output,
-    timer_counter
+    timer_output
   );
 
   tt_um_jimktrains_vslc_servo srv0(
@@ -72,11 +70,9 @@ module tt_um_jimktrains_vslc_executor #(
   );
 
 
-  wire [15:0] timer_counter;
-
-  reg [15:0]stack;
+  localparam STACK_DEPTH = 8;
+  reg [(STACK_DEPTH-1):0]stack;
   reg [7:0]uo_out_reg;
-  assign stack_o = stack;
   assign uo_out = uo_out_reg;
   wire tos = stack[0];
   wire nos = stack[1];
@@ -153,29 +149,27 @@ module tt_um_jimktrains_vslc_executor #(
               instr_reset ? {1'b0, 1'b0} : {1'b0, 1'b1}))));
 
   reg [7:0]prev_instr;
-  reg [1:0]exec_state;
+  reg exec_state;
   localparam EXEC_STATE_INSTR = 0;
   localparam EXEC_STATE_EXTRA_BYTE_1 = 1;
-  localparam EXEC_STATE_EXTRA_BYTE_2 = 2;
 
   always @(negedge clk) begin
     if (!rst_n) begin
-      stack <= 16'b0;
+      stack <= 8'b0;
       uo_out_reg <= 8'b0;
-      timer_period_a <= 46875;
-      timer_period_b <= 46875;
-      servo_freq_val <= 7500;
-      servo_reset_val <= 950;
-      servo_set_val <= 188;
+      timer_period_a <= 183;
+      //timer_period_b <= 183;
+      servo_freq_val <= 234;
+      servo_reset_val <= 11;
+      servo_set_val <= 23;
       sfr <= 0;
       exec_state <= EXEC_STATE_INSTR;
       timer_clk_div <= TIMER_CLK_DIV;
       servo_clk_div <= SERVO_CLK_DIV;
     end else begin
       prev_instr <= exec_state == EXEC_STATE_INSTR ? instr : prev_instr;
-      exec_state <= exec_state == EXEC_STATE_EXTRA_BYTE_1 ? EXEC_STATE_EXTRA_BYTE_2 : (
-                    exec_state == EXEC_STATE_EXTRA_BYTE_2 ? EXEC_STATE_INSTR : (
-                    instr_sparam && (tos == instr_sparam_expected) ? EXEC_STATE_EXTRA_BYTE_1 : EXEC_STATE_INSTR));
+      exec_state <= exec_state == EXEC_STATE_EXTRA_BYTE_1 ? EXEC_STATE_INSTR : (
+                    instr_sparam && (tos == instr_sparam_expected) ? EXEC_STATE_EXTRA_BYTE_1 : EXEC_STATE_INSTR);
 
       if (timer_enabled) begin
         sfr[SFR_TIMER_OUTPUT] <= timer_output;
@@ -190,36 +184,23 @@ module tt_um_jimktrains_vslc_executor #(
       if (exec_state == EXEC_STATE_EXTRA_BYTE_1) begin
         case (regid)
           0: begin end // Not Implemented
-          1: begin end // It's only 8bits
-          2: timer_period_a[15:8] <= instr;
-          3: timer_period_b[15:8] <= instr;
-          4: begin end // It's only 8bits
-          5: servo_freq_val[15:8] <= instr;
-          6: servo_reset_val[15:8] <= instr;
-          7: servo_reset_val[15:8] <= instr;
-          default: begin end
-        endcase
-      end else if (exec_state == EXEC_STATE_EXTRA_BYTE_2) begin
-        case (regid)
-          0: begin end // Not Implemented
-          1: timer_clk_div <= instr;
+          1: timer_clk_div <= instr[4:0];
           2: timer_period_a[7:0] <= instr;
-          3: timer_period_b[7:0] <= instr;
-          4: servo_clk_div <= instr;
+          3: begin end // timer_period_b[7:0] <= instr;
+          4: servo_clk_div <= instr[4:0];
           5: servo_freq_val[7:0] <= instr;
-          6: servo_reset_val[7:0] <= instr;
-          7: servo_reset_val[7:0] <= instr;
-          default: begin end
+          6: servo_reset_val[3:0] <= instr[3:0];
+          7: servo_set_val[3:0] <= instr[3:0];
         endcase
       end else if (instr_ready) begin
-        stack[15] <= instr_clr ? 0 : (
+        stack[STACK_DEPTH-1] <= instr_clr ? 0 : (
                      instr_setall ? 1 : (
-                     shift_left_1 ? stack[14] : (
-                     shift_right_1 ? stack[0] : stack[15])));
-        stack[14:3] <= instr_clr ? 12'b0 : (
-                       instr_setall ? 12'hFFF : (
-                       shift_left_1 ? stack[13:2] : (
-                       shift_right_1 ? stack[15:4] : stack[14:3])));
+                     shift_left_1 ? stack[STACK_DEPTH-2] : (
+                     shift_right_1 ? stack[0] : stack[STACK_DEPTH-1])));
+        stack[STACK_DEPTH-2:3] <= instr_clr ? 4'b0 : (
+                       instr_setall ? 4'hF : (
+                       shift_left_1 ? stack[STACK_DEPTH-3:2] : (
+                       shift_right_1 ? stack[STACK_DEPTH-1:4] : stack[STACK_DEPTH-2:3])));
         stack[2] <= instr_clr ? 0 : (
                     instr_setall ? 1 : (
                     has_3_result ? res2 : (

@@ -70,27 +70,27 @@ INSTR_ONE: "INSTR_ONE",
 
 # These silly little functions just make debugging easier when it's
 # just printing the function name.
-def assert_timer_high(dut, stack):
+def assert_timer_high(dut):
     return ((dut.uo_out.value>>(TIMER_OUTPUT)) & 0x1) == 1
 
-def assert_timer_low(dut, stack):
+def assert_timer_low(dut):
     return ((dut.uo_out.value>>(TIMER_OUTPUT)) & 0x1) == 0
 
 def assert_tos(x):
-    def y(dut, stack):
-        return ((dut.uio_out.value[7-TOS_OUPUT]) & 0x1) == x
+    def y(dut):
+        return dut.tos.value == x
     return y
 
-def assert_tos_t(dut, stack):
-    return ((dut.uio_out.value[7-TOS_OUPUT]) & 0x1) == 1
+def assert_tos_t(dut):
+    return dut.tos.value == 1
 
-def assert_tos_f(dut, stack):
-    return ((dut.uio_out.value[7-TOS_OUPUT]) & 0x1) == 0
+def assert_tos_f(dut):
+    return dut.tos.value == 0
 
-def assert_output_1_t(dut, stack):
+def assert_output_1_t(dut):
     return ((dut.uo_out.value[7-1]) & 0x1) == 1
 
-def assert_output_1_f(dut, stack):
+def assert_output_1_f(dut):
     return ((dut.uo_out.value[7-1]) & 0x1) == 0
 
 
@@ -180,8 +180,9 @@ TIMER_OUTPUT = 7;
 msg = lambda m : (m, None)
 
 def test_stack(expected):
-    def y(dut, stack):
-        if stack != expected:
+    def y(dut):
+        if dut.stack.value[8:15] != expected:
+            dut._log.info(f"{dut.stack.value=}")
             dut._log.info(f"expected stack={expected:08b}")
             return False
         return True
@@ -338,7 +339,6 @@ async def read8(dut):
     return r
 
 async def write8(dut, v):
-    rs = 0
     orig_uio_in = dut.uio_in.value
 
 
@@ -353,12 +353,6 @@ async def write8(dut, v):
         x |= ((i > 5) and (i < 7)) << CYCLE_START
         dut.uio_in.value = x
         await ClockCycles(dut.clk, 1, rising=False)
-        rs += (dut.uio_out.value[7-STACK_OUTPUT] << i)
-
-            #rs += s1 + s2
-    # rs += (((dut.uio_out.value[7-TOS_OUPUT]) & 0x01) << 0) & 0xff
-    # rs += (((dut.uio_out.value[7-STACK_OUTPUT2]) & 0x01) << 1) & 0xff
-    return rs
 
 async def do_reset(dut):
     # Set the clock period to 10 us (100 KHz)
@@ -402,11 +396,12 @@ async def test_project(dut):
             continue
         dut._log.info(f"{i=} {adj_addr=} {m=:02x}")
         adj_addr += 1
-        read_stack = await write8(dut, m)
-        tos = ((dut.uio_out.value[7-TOS_OUPUT]) & 0x1)
-        dut._log.info(f"  {read_stack=:08b} {tos=}")
+        await write8(dut, m)
+        tos = dut.tos.value
+        read_stack = dut.stack.value
+        dut._log.info(f"  {read_stack=} {tos=}")
         if last_a is not None:
-            res = last_a(dut, read_stack)
+            res = last_a(dut)
             if not res:
                 dut._log.info(f"  {dut.uio_out.value=}")
                 dut._log.info(f"  {dut.uo_out.value=}")
@@ -430,7 +425,7 @@ async def test_project(dut):
                 dut._log.info(f"      {adj_addr=} {m=:02x} {j<<i=} {k<<i=}")
                 read_stack = await write8(dut, m)
                 read_stack = await write8(dut, INSTR_NOP)
-                tos = ((dut.uio_out.value[7-TOS_OUPUT]) & 0x1)
+                tos = dut.tos.value
                 if tos != expected:
                     dut._log.info(f"      {tos=} {expected=}")
                 assert tos == expected
@@ -449,7 +444,7 @@ async def test_project(dut):
                 dut._log.info(f"      {adj_addr=} {m=:02x} {j<<i=} {k<<i=}")
                 read_stack = await write8(dut, m)
                 read_stack = await write8(dut, INSTR_NOP)
-                tos = ((dut.uio_out.value[7-TOS_OUPUT]) & 0x1)
+                tos = dut.tos.value
                 if tos != expected:
                     dut._log.info(f"      {tos=} {expected=}")
                 assert tos == expected
