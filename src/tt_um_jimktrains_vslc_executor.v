@@ -13,7 +13,10 @@ module tt_um_jimktrains_vslc_executor (
   input [7:0] instr,
   input [7:0] ui_in,
   input [7:0] ui_in_prev,
-  output [7:0] uo_out
+  output [7:0] uo_out,
+  output timer_enabled,
+  output timer_output,
+  output servo_output
 );
   reg [4:0] timer_clk_div;
   reg [4:0] servo_clk_div;
@@ -24,26 +27,20 @@ module tt_um_jimktrains_vslc_executor (
   wire servo_clk;
   assign servo_clk = servo_clk_div == 0 ? clk : counter[servo_clk_div-1];
 
-  reg [7:0] timer_period_a;
+  // reg [7:0] timer_period_a;
   // reg [7:0] timer_period_b;
-  wire timer_enabled;
-  wire timer_output;
 
   reg [4:0] servo_set_val;
-  reg [4:0] servo_reset_val;
-  reg [7:0] servo_freq_val;
   wire servo_enabled;
   wire servo_val;
-  wire servo_output;
 
   localparam SFR_TIMER_ENABLE = 0;
   localparam SFR_TIMER_OUTPUT = 1;
   localparam SFR_SERVO_ENABLE = 2;
   localparam SFR_SERVO_VAL    = 3;
   localparam SFR_SERVO_OUTPUT = 4;
-  localparam SFR_TIMER_OUTPUT_ENABLE = 5;
 
-  reg [9:0] sfr;
+  reg [15:0] sfr;
   assign timer_enabled = sfr[SFR_TIMER_ENABLE];
   assign servo_enabled = sfr[SFR_SERVO_ENABLE];
   assign servo_val = sfr[SFR_SERVO_VAL];
@@ -71,7 +68,7 @@ module tt_um_jimktrains_vslc_executor (
   );
 
 
-  localparam STACK_DEPTH = 6;
+  localparam STACK_DEPTH = 15;
   reg [(STACK_DEPTH-1):0]stack;
   reg [7:0]uo_out_reg;
   assign uo_out = uo_out_reg;
@@ -156,15 +153,20 @@ module tt_um_jimktrains_vslc_executor (
   reg instr_ready_prev;
   wire instr_ready_negedge = instr_ready_prev && !instr_ready;
 
+
+  wire [7:0]servo_freq_val = 234;
+  wire [4:0]servo_reset_val = 11;
+  wire [7:0]timer_period_a = 183;
+
   always @(negedge clk) begin
     instr_ready_prev <= instr_ready;
     if (!rst_n) begin
-      stack <= 6'b0;
+      stack <= 15'b0;
       uo_out_reg <= 8'b0;
-      timer_period_a <= 183;
+      //timer_period_a <= 183;
       // timer_period_b <= 183;
-      servo_freq_val <= 234;
-      servo_reset_val <= 11;
+      //servo_freq_val <= 234;
+      //servo_reset_val <= 11;
       servo_set_val <= 23;
       sfr <= 0;
       exec_state <= EXEC_STATE_INSTR;
@@ -172,32 +174,24 @@ module tt_um_jimktrains_vslc_executor (
       servo_clk_div <= 10;
     end else begin
 
-      servo_freq_val <= servo_freq_val;
-      servo_reset_val <= servo_reset_val;
+      //servo_freq_val <= servo_freq_val;
+      //servo_reset_val <= servo_reset_val;
       servo_set_val <= servo_set_val;
-      if (timer_enabled) begin
-        sfr[SFR_TIMER_OUTPUT] <= timer_output;
-        if (sfr[SFR_TIMER_OUTPUT_ENABLE]) begin
-          uo_out_reg[3] <= timer_output;
-        end
-      end
-      if (servo_enabled) begin
-        sfr[SFR_SERVO_OUTPUT] <= servo_output;
-        uo_out_reg[4] <= servo_output;
-      end
+      sfr[SFR_TIMER_OUTPUT] <= timer_output;
+      sfr[SFR_SERVO_OUTPUT] <= servo_output;
       if (instr_ready_negedge) begin
         prev_instr <= exec_state == EXEC_STATE_INSTR ? instr : prev_instr;
         exec_state <= exec_state == EXEC_STATE_EXTRA_BYTE_1 ? EXEC_STATE_INSTR : (
                       instr_sparam && (tos == instr_sparam_expected) ? EXEC_STATE_EXTRA_BYTE_1 : EXEC_STATE_INSTR);
         if (exec_state == EXEC_STATE_EXTRA_BYTE_1) begin
           case (regid)
-            0: begin end // Not Implemented
+            //0: begin end // Not Implemented
             1: timer_clk_div <= instr[4:0];
-            2: timer_period_a[7:0] <= instr;
-            3: begin end //timer_period_b[7:0] <= instr;
-            4: servo_clk_div <= instr[4:0];
-            5: servo_freq_val[7:0] <= instr;
-            6: servo_reset_val[3:0] <= instr[3:0];
+            //2: timer_period_a[7:0] <= instr;
+            //3: begin end //timer_period_b[7:0] <= instr;
+            //4: servo_clk_div <= instr[4:0];
+            //5: servo_freq_val[7:0] <= instr;
+            //6: servo_reset_val[3:0] <= instr[3:0];
             7: servo_set_val[3:0] <= instr[3:0];
           endcase
         end else begin
@@ -205,8 +199,8 @@ module tt_um_jimktrains_vslc_executor (
             instr_setall ? 1 : (
             shift_left_1 ? stack[STACK_DEPTH-2] : (
             shift_right_1 ? 0 : stack[STACK_DEPTH-1])));
-          stack[STACK_DEPTH-2:3] <= instr_clr ? 2'b0 : (
-            instr_setall ? 2'h3 : (
+          stack[STACK_DEPTH-2:3] <= instr_clr ? 11'b0 : (
+            instr_setall ? 11'hFF : (
             shift_left_1 ? stack[STACK_DEPTH-3:2] : (
             shift_right_1 ? stack[STACK_DEPTH-1:4] : stack[STACK_DEPTH-2:3])));
           stack[2] <= instr_clr ? 0 : (

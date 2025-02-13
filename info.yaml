@@ -41,17 +41,17 @@ pinout:
   uo[3]: "Output"
   uo[4]: "Output"
   uo[5]: "Output"
-  uo[6]: "Output/Timer Output"
-  uo[7]: "Output/Server Output"
+  uo[6]: "Output"
+  uo[7]: "Output"
 
   # Bidirectional pins
   uio[0]: "EEPROM /CS"
   uio[1]: "SPI COPI"
   uio[2]: "SPI CIPO"
   uio[3]: "SPI CLK"
-  uio[4]: "(unused)"
-  uio[5]: "(unused)"
-  uio[6]: "(unused)"
+  uio[4]: "Timer Output"
+  uio[5]: "Complementry Timer Output"
+  uio[6]: "Servo Output"
   uio[7]: "(unused)"
 
 # Do not change!
