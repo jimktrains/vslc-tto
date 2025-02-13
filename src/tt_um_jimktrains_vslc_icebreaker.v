@@ -29,12 +29,8 @@ module tt_um_jimktrains_vslc_icebreaker (
   output LED_BLU_N,
   output LED_GRN_N,
   output LED_RED_N,
-  output FLASH_IO0,
-  output FLASH_IO1,
   inout [7:0]uio
 );
-wire [7:0]ledout;
-wire addr_strobe;
 
 wire [7:0] uio_oe;
 wire [7:0] uio_in;
@@ -47,6 +43,10 @@ assign ui_in[0] = BTN_N;
 assign ui_in[1] = BTN1;
 assign ui_in[2] = BTN2;
 assign ui_in[3] = BTN3;
+assign ui_in[4] = 0;
+assign ui_in[5] = 0;
+assign ui_in[6] = 0;
+assign ui_in[7] = 0;
 
 assign LED1 = uo_out[0];
 assign LED2 = uo_out[1];
@@ -110,8 +110,6 @@ tt_um_jimktrains_vslc_core core (
   CLK,
   rst_n
 );
-
-assign core.scan_cycle_trigger_in = 0;
 
 always @(posedge CLK) begin
   counter <= rst_n ? counter : counter + 1;
