@@ -22,12 +22,15 @@ BOUNDARY_LAYERS = [
     # (112, 4), # cmm4, waffle-drop
     # (117, 4), # cmm5, waffle-drop
 ]
+# Don't put stuff in 4 as it seems to prevent the power rails from being
+# laid all the way down.
 PIXEL_LAYERS = [
     (68, 20), # met1, drawing
     (69, 20), # met2, drawing
     #(70, 20), # met3, drawing
     #(71, 20), # met4, drawing
 ]
+# 0.3 is the min in some layers
 PIXEL_SIZE = 0.35 # um
 VERBOSITY = 1
 
