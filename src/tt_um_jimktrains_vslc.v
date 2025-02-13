@@ -5,13 +5,7 @@
 
 `default_nettype none
 
-module tt_um_jimktrains_vslc
-#(
-  parameter SPI_CLK_DIV = 3,
-  parameter TIMER_CLK_DIV = 15,
-  parameter SERVO_CLK_DIV = 10
-) (
-
+module tt_um_jimktrains_vslc (
   input  wire [7:0] ui_in,   // Dedicated inputs
   output wire [7:0] uo_out,   // Dedicated outputs
   input  wire [7:0] uio_in,   // IOs: Input path
