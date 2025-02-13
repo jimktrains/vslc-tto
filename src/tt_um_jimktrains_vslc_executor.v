@@ -43,7 +43,7 @@ module tt_um_jimktrains_vslc_executor (
   localparam SFR_SERVO_OUTPUT = 4;
   localparam SFR_TIMER_OUTPUT_ENABLE = 5;
 
-  reg [15:0] sfr;
+  reg [9:0] sfr;
   assign timer_enabled = sfr[SFR_TIMER_ENABLE];
   assign servo_enabled = sfr[SFR_SERVO_ENABLE];
   assign servo_val = sfr[SFR_SERVO_VAL];
@@ -71,7 +71,7 @@ module tt_um_jimktrains_vslc_executor (
   );
 
 
-  localparam STACK_DEPTH = 8;
+  localparam STACK_DEPTH = 6;
   reg [(STACK_DEPTH-1):0]stack;
   reg [7:0]uo_out_reg;
   assign uo_out = uo_out_reg;
@@ -159,7 +159,7 @@ module tt_um_jimktrains_vslc_executor (
   always @(negedge clk) begin
     instr_ready_prev <= instr_ready;
     if (!rst_n) begin
-      stack <= 8'b0;
+      stack <= 6'b0;
       uo_out_reg <= 8'b0;
       timer_period_a <= 183;
       // timer_period_b <= 183;
@@ -205,8 +205,8 @@ module tt_um_jimktrains_vslc_executor (
             instr_setall ? 1 : (
             shift_left_1 ? stack[STACK_DEPTH-2] : (
             shift_right_1 ? 0 : stack[STACK_DEPTH-1])));
-          stack[STACK_DEPTH-2:3] <= instr_clr ? 4'b0 : (
-            instr_setall ? 4'hF : (
+          stack[STACK_DEPTH-2:3] <= instr_clr ? 2'b0 : (
+            instr_setall ? 2'h3 : (
             shift_left_1 ? stack[STACK_DEPTH-3:2] : (
             shift_right_1 ? stack[STACK_DEPTH-1:4] : stack[STACK_DEPTH-2:3])));
           stack[2] <= instr_clr ? 0 : (

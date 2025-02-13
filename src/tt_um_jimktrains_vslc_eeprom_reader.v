@@ -10,14 +10,14 @@ module tt_um_jimktrains_vslc_eeprom_reader(
   input spi_clk,
   input rst_n,
   input goto_address,
-  input [9:0]address,
+  input [8:0]address,
   input hold_n,
   input cipo,
   output copi,
   output chip_select_n,
   output read_ready,
   output [7:0]byte_read,
-  output [9:0]address_read
+  output [8:0]address_read
 );
   reg goto_addr_prev;
   reg [3:0]bit_counter;
@@ -26,12 +26,12 @@ module tt_um_jimktrains_vslc_eeprom_reader(
 
   assign byte_read = read_buf;
   assign read_ready = bit_counter == 0 && comm_state == COMM_READ;
-  reg [9:0]address_reading;
+  reg [8:0]address_reading;
 
   assign address_read = address_reading;
 
   wire [15:0]adj_addr;
-  assign adj_addr = {6'b0, address};
+  assign adj_addr = {7'b0, address};
   assign copi = comm_state == COMM_INSTR ? EEPROM_READ_INSTR[bit_counter[2:0]] : adj_addr[bit_counter];
   assign chip_select_n = comm_state == COMM_RESET;
 

@@ -18,7 +18,7 @@ module tt_um_jimktrains_vslc_core (
   wire instr_ready;
 
   wire [7:0] eeprom_read_buf;
-  wire [9:0] eeprom_addr_read;
+  wire [8:0] eeprom_addr_read;
   wire eeprom_read_ready;
 
   reg eeprom_restart_read;
@@ -114,9 +114,9 @@ module tt_um_jimktrains_vslc_core (
   assign ui_in_reg_w = ui_in_reg;
   assign ui_in_prev_reg_w = ui_in_prev_reg;
 
-  reg [9:0]start_addr;
-  wire [9:0] eeprom_start_addr = start_addr;
-  reg [9:0]end_addr;
+  reg [4:0]start_addr;
+  wire [8:0] eeprom_start_addr = {4'b0, start_addr};
+  reg [8:0]end_addr;
 
   wire auto_scan_cycle;
   assign auto_scan_cycle = eeprom_restart_read;
@@ -154,12 +154,12 @@ module tt_um_jimktrains_vslc_core (
       eeprom_hold_n <= 1;
     end else begin
       if (eeprom_read_ready) begin
-        start_addr[9:8] <= (eeprom_addr_read == 0) ? eeprom_read_buf[1:0] : start_addr[9:8];
-        start_addr[7:0] <= (eeprom_addr_read == 1) ? eeprom_read_buf : start_addr[7:0];
-        end_addr[9:8] <= (eeprom_addr_read == 2) ? eeprom_read_buf[1:0] : end_addr[9:8];
+        //start_addr[8] <= (eeprom_addr_read == 0) ? eeprom_read_buf[0] : start_addr[8];
+        start_addr[4:0] <= (eeprom_addr_read == 1) ? eeprom_read_buf[4:0] : start_addr;
+        end_addr[8] <= (eeprom_addr_read == 2) ? eeprom_read_buf[0] : end_addr[8];
         end_addr[7:0] <= (eeprom_addr_read == 3) ? eeprom_read_buf : end_addr[7:0];
 
-        eeprom_restart_read <= end_addr != 10'b0 && eeprom_addr_read >= end_addr;
+        eeprom_restart_read <= end_addr != 9'b0 && eeprom_addr_read == end_addr;
       end else begin
         eeprom_restart_read <= eeprom_restart_read;
       end
