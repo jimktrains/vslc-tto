@@ -25,13 +25,13 @@ module tt_um_jimktrains_vslc_executor (
   assign servo_clk = servo_clk_div == 0 ? clk : counter[servo_clk_div-1];
 
   reg [7:0] timer_period_a;
-  reg [7:0] timer_period_b;
+  // reg [7:0] timer_period_b;
   wire timer_enabled;
   wire timer_output;
 
-  reg [7:0] servo_set_val;
-  reg [7:0] servo_reset_val;
-  reg [15:0] servo_freq_val;
+  reg [4:0] servo_set_val;
+  reg [4:0] servo_reset_val;
+  reg [7:0] servo_freq_val;
   wire servo_enabled;
   wire servo_val;
   wire servo_output;
@@ -53,7 +53,7 @@ module tt_um_jimktrains_vslc_executor (
     timer_clk,
     rst_n,
     timer_period_a,
-    timer_period_b,
+    timer_period_a,
     timer_enabled,
     timer_output
   );
@@ -162,7 +162,7 @@ module tt_um_jimktrains_vslc_executor (
       stack <= 8'b0;
       uo_out_reg <= 8'b0;
       timer_period_a <= 183;
-      timer_period_b <= 183;
+      // timer_period_b <= 183;
       servo_freq_val <= 234;
       servo_reset_val <= 11;
       servo_set_val <= 23;
@@ -194,7 +194,7 @@ module tt_um_jimktrains_vslc_executor (
             0: begin end // Not Implemented
             1: timer_clk_div <= instr[4:0];
             2: timer_period_a[7:0] <= instr;
-            3: timer_period_b[7:0] <= instr;
+            3: begin end //timer_period_b[7:0] <= instr;
             4: servo_clk_div <= instr[4:0];
             5: servo_freq_val[7:0] <= instr;
             6: servo_reset_val[3:0] <= instr[3:0];

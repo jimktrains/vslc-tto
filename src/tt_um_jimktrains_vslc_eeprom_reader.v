@@ -15,17 +15,14 @@ module tt_um_jimktrains_vslc_eeprom_reader(
   input cipo,
   output copi,
   output chip_select_n,
-  output rw,
   output read_ready,
   output [7:0]byte_read,
-  output [9:0]address_read,
-  output [3:0]bitc
+  output [9:0]address_read
 );
   reg goto_addr_prev;
   reg [3:0]bit_counter;
   reg [7:0]read_buf;
 
-  assign bitc = bit_counter;
 
   assign byte_read = read_buf;
   assign read_ready = bit_counter == 0 && comm_state == COMM_READ;
@@ -45,8 +42,6 @@ module tt_um_jimktrains_vslc_eeprom_reader(
   localparam COMM_INSTR = 3'h1;
   localparam COMM_ADDR  = 3'h2;
   localparam COMM_READ  = 3'h3;
-
-  assign rw = comm_state != COMM_READ;
 
   reg spi_clk_prev;
 

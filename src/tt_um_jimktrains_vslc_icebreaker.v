@@ -99,6 +99,7 @@ assign P1A8 = uo_out[5];
 assign P1A9 = uo_out[6];
 assign P1A10= uo_out[7];
 
+
 tt_um_jimktrains_vslc_core core (
   ui_in,
   uo_out,
@@ -107,15 +108,13 @@ tt_um_jimktrains_vslc_core core (
   uio_oe,
   ena,
   CLK,
-  rst_n,
-  addr_strobe,
-  scan_cycle_clk
+  rst_n
 );
 
-wire scan_cycle_clk;
+assign core.scan_cycle_trigger_in = 0;
 
 always @(posedge CLK) begin
-  counter <= counter + 1;
+  counter <= rst_n ? counter : counter + 1;
   rst_n <= rst_n ? rst_n : counter < 8;
 end
 endmodule
