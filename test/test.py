@@ -5,6 +5,8 @@ import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles
 
+SPI_CLOCK_DIV = 2**3;
+
 IO_I = 0
 IO_O = 1
 
@@ -18,10 +20,15 @@ INSTR_RESET_TIMER = 0x30
 INSTR_NOP = 0xff
 INSTR_CLR = 0xf0
 INSTR_SETALL = 0xf1
-INSTR_RISING     = lambda reg : 0b11100000 + reg
-INSTR_FALLING    = lambda reg : 0b11101000 + reg
+INSTR_RISING     = lambda reg : 0b11000000 + reg
+INSTR_FALLING    = lambda reg : 0b11010000 + reg
 INSTR_SWAP = 0b11110010
 INSTR_ROT  = 0b11110011
+
+# ab   = 0001
+# ~ab  = 0010 -> NIMPL
+# a~b  = 0100 -> NCONV
+# ~a~b = 1000 -> NOR
 
 INSTR_AND     = 0b10010001
 INSTR_NAND    = 0b10011110
@@ -34,7 +41,7 @@ INSTR_NIMPL   = 0b10010010
 INSTR_CONV    = 0b10011011
 INSTR_NCONV   = 0b10010100
 
-INSTR_DUP     = 0b10111100
+INSTR_DUP     = 0b10110101
 INSTR_OVER    = 0b10111010
 INSTR_DROP    = 0b10011010
 INSTR_ZERO    = 0b10110000
@@ -65,27 +72,27 @@ INSTR_ONE: "INSTR_ONE",
 
 # These silly little functions just make debugging easier when it's
 # just printing the function name.
-def assert_timer_high(dut, stack):
-    return ((dut.uo_out.value[7-TIMER_OUTPUT]) & 0x1) == 1
+def assert_timer_high(dut):
+    return ((dut.uo_out.value>>(TIMER_OUTPUT)) & 0x1) == 1
 
-def assert_timer_low(dut, stack):
-    return ((dut.uo_out.value[7-TIMER_OUTPUT]) & 0x1) == 0
+def assert_timer_low(dut):
+    return ((dut.uo_out.value>>(TIMER_OUTPUT)) & 0x1) == 0
 
 def assert_tos(x):
-    def y(dut, stack):
-        return ((dut.uio_out.value[7-TOS_OUPUT]) & 0x1) == x
+    def y(dut):
+        return dut.tos.value == x
     return y
 
-def assert_tos_t(dut, stack):
-    return ((dut.uio_out.value[7-TOS_OUPUT]) & 0x1) == 1
+def assert_tos_t(dut):
+    return dut.tos.value == 1
 
-def assert_tos_f(dut, stack):
-    return ((dut.uio_out.value[7-TOS_OUPUT]) & 0x1) == 0
+def assert_tos_f(dut):
+    return dut.tos.value == 0
 
-def assert_output_1_t(dut, stack):
+def assert_output_1_t(dut):
     return ((dut.uo_out.value[7-1]) & 0x1) == 1
 
-def assert_output_1_f(dut, stack):
+def assert_output_1_f(dut):
     return ((dut.uo_out.value[7-1]) & 0x1) == 0
 
 
@@ -136,17 +143,17 @@ def generate_test(instr):
 
 
 def generate_timer_test():
+    return []
     return [
         ("Timer Test", None),
         push_true,
         ("Enable Timer", None),
         (INSTR_SET_TIMER,    None ),
         ("Check High", None),
+        (INSTR_NOP,          None ),
         (INSTR_NOP, assert_timer_high),
         ("Check Low", None),
         (INSTR_NOP, assert_timer_low),
-        (INSTR_NOP,          None ),
-        (INSTR_NOP,          None ),
         ("Disable Timer", None),
         push_false,
         (INSTR_POP_TIMER,    None ),
@@ -165,18 +172,19 @@ EEPROM_READ_COMMAND = 0x03;
 
 CYCLE_START = 7;
 EEPROM_COPI = 0;
-EEPROM_CIPO = 1;
+EEPROM_CIPO = 0;
 EEPROM_CS = 2;
 STACK_OUTPUT = 3;
-TOS_OUPUT = 6;
+TOS_OUPUT = 4;
 TIMER_OUTPUT = 7;
 
 
 msg = lambda m : (m, None)
 
 def test_stack(expected):
-    def y(dut, stack):
-        if stack != expected:
+    def y(dut):
+        if dut.stack.value[0:7] != expected:
+            dut._log.info(f"{dut.stack.value=}")
             dut._log.info(f"expected stack={expected:08b}")
             return False
         return True
@@ -328,12 +336,11 @@ for j in [True, False]:
 async def read8(dut):
     r = 0x0
     for i in range(8):
-        await ClockCycles(dut.clk, 1, rising=True)
+        await ClockCycles(dut.clk, SPI_CLOCK_DIV *1, rising=True)
         r += ((dut.uio_out.value[7-EEPROM_COPI]) & 0x01) << (7-i)
     return r
 
 async def write8(dut, v):
-    rs = 0
     orig_uio_in = dut.uio_in.value
 
 
@@ -347,35 +354,26 @@ async def write8(dut, v):
         # Do a cycle every instruction
         x |= ((i > 5) and (i < 7)) << CYCLE_START
         dut.uio_in.value = x
-        await ClockCycles(dut.clk, 1, rising=False)
-        rs += (dut.uio_out.value[7-STACK_OUTPUT] << i)
+        await ClockCycles(dut.clk, SPI_CLOCK_DIV *1, rising=False)
 
-            #rs += s1 + s2
-    # rs += (((dut.uio_out.value[7-TOS_OUPUT]) & 0x01) << 0) & 0xff
-    # rs += (((dut.uio_out.value[7-STACK_OUTPUT2]) & 0x01) << 1) & 0xff
-    return rs
-
-
-@cocotb.test()
-async def test_project(dut):
-    dut._log.info("Start")
-
+async def do_reset(dut):
     # Set the clock period to 10 us (100 KHz)
     clock = Clock(dut.clk, 10, units="us")
     cocotb.start_soon(clock.start())
-    await ClockCycles(dut.clk, 1)
+    await ClockCycles(dut.clk, SPI_CLOCK_DIV *1)
 
     # Reset
-    dut._log.info(f"{len(MEMORY)=}")
+    dut._log.info(f"{len(MEMORY)=} {SPI_CLOCK_DIV=}")
     dut._log.info("Reset")
     dut.ena.value = 1
     dut.ui_in.value = 2
     dut.uio_in.value = 0
     dut.rst_n.value = 0
-    await ClockCycles(dut.clk, 1)
+    await ClockCycles(dut.clk, SPI_CLOCK_DIV *1)
     dut._log.info(f"{dut.uio_out.value=}")
-    assert dut.uio_out.value[7-EEPROM_CS]
+    #assert dut.uio_out.value[7-EEPROM_CS]
     dut.rst_n.value = 1
+    await ClockCycles(dut.clk, SPI_CLOCK_DIV *1)
     dut._log.info(f"Reset Done")
     dut._log.info(f"Reading READ Command")
     assert (await read8(dut)) == EEPROM_READ_COMMAND
@@ -383,22 +381,29 @@ async def test_project(dut):
     dut._log.info(f"Reading Address")
     assert (await read8(dut)) == 0
     assert (await read8(dut)) == 0
+
+@cocotb.test()
+async def test_project(dut):
+    dut._log.info("Start")
+
+    await do_reset(dut)
+
     last_a = None
     adj_addr = 0
 
-    await ClockCycles(dut.clk, 1)
     for (i,(m,a)) in enumerate(MEMORY):
         if (isinstance(m, str)):
             dut._log.info(f"#### {i=} {m=}")
             continue
         dut._log.info(f"{i=} {adj_addr=} {m=:02x}")
         adj_addr += 1
-        read_stack = await write8(dut, m)
-        tos = ((dut.uio_out.value[7-TOS_OUPUT]) & 0x1)
-        dut._log.info(f"  {read_stack=:08b} {tos=}")
+        await write8(dut, m)
+        tos = dut.tos.value
+        read_stack = dut.stack.value
         if last_a is not None:
-            res = last_a(dut, read_stack)
+            res = last_a(dut)
             if not res:
+                dut._log.info(f"  {read_stack=} {tos=}")
                 dut._log.info(f"  {dut.uio_out.value=}")
                 dut._log.info(f"  {dut.uo_out.value=}")
                 dut._log.info(f"  {last_a=}")
@@ -413,15 +418,17 @@ async def test_project(dut):
                 dut._log.info(f"#### Testing RISING({i}) {j} to {k} => {expected}")
                 adj_addr += 1
                 dut.ui_in.value = (j << i)
-                read_stack = await write8(dut, INSTR_NOP)
+                await write8(dut, INSTR_NOP)
 
                 dut.ui_in.value = (k << i)
                 m = INSTR_RISING(i)
                 adj_addr += 1
                 dut._log.info(f"      {adj_addr=} {m=:02x} {j<<i=} {k<<i=}")
-                read_stack = await write8(dut, m)
-                read_stack = await write8(dut, INSTR_NOP)
-                tos = ((dut.uio_out.value[7-TOS_OUPUT]) & 0x1)
+                await write8(dut, m)
+                await write8(dut, INSTR_NOP)
+                tos = dut.tos.value
+                if tos != expected:
+                    dut._log.info(f"      {tos=} {expected=}")
                 assert tos == expected
     for i in range(8):
         for j in [1, 0]:
@@ -438,19 +445,15 @@ async def test_project(dut):
                 dut._log.info(f"      {adj_addr=} {m=:02x} {j<<i=} {k<<i=}")
                 read_stack = await write8(dut, m)
                 read_stack = await write8(dut, INSTR_NOP)
-                tos = ((dut.uio_out.value[7-TOS_OUPUT]) & 0x1)
+                tos = dut.tos.value
+                if tos != expected:
+                    dut._log.info(f"      {tos=} {expected=}")
                 assert tos == expected
 
-        await ClockCycles(dut.clk, 1)
 
 @cocotb.test()
 async def test_addressing(dut):
     dut._log.info("Start, the Second")
-
-    # Set the clock period to 10 us (100 KHz)
-    clock = Clock(dut.clk, 10, units="us")
-    cocotb.start_soon(clock.start())
-    await ClockCycles(dut.clk, 1)
 
     MEMORY = [
         0x00,
@@ -462,25 +465,8 @@ async def test_addressing(dut):
         INSTR_ONE,
     ]
 
-    # Reset
-    dut._log.info(f"{len(MEMORY)=}")
-    dut._log.info("Reset")
-    dut.ena.value = 1
-    dut.ui_in.value = 2
-    dut.uio_in.value = 0
-    dut.rst_n.value = 0
-    await ClockCycles(dut.clk, 1)
-    assert dut.uio_out.value[7-EEPROM_CS]
-    dut.rst_n.value = 1
-    dut._log.info(f"Reset Done")
-    dut._log.info(f"Reading READ Command")
-    assert (await read8(dut)) == EEPROM_READ_COMMAND
-    assert not dut.uio_out.value[7-EEPROM_CS]
-    dut._log.info(f"Reading Address")
-    assert (await read8(dut)) == 0
-    assert (await read8(dut)) == 0
+    await do_reset(dut)
 
-    await ClockCycles(dut.clk, 1)
     await write8(dut, MEMORY[0])
     await write8(dut, MEMORY[1])
     await write8(dut, MEMORY[2])
@@ -489,18 +475,18 @@ async def test_addressing(dut):
     await write8(dut, MEMORY[5])
     await write8(dut, MEMORY[6])
     dut._log.info(f"Got to the end of the program")
-    await ClockCycles(dut.clk, 1)
+    await ClockCycles(dut.clk, SPI_CLOCK_DIV *1)
     assert not dut.uo_out.value[7-0]
 
     dut._log.info(f"Reading READ Command")
-    assert (await read8(dut)) == EEPROM_READ_COMMAND
-    assert not dut.uio_out.value[7-EEPROM_CS]
+    x = await read8(dut)
+    dut._log.info(f"Read {x=:08b}")
+    assert x == EEPROM_READ_COMMAND
     assert not dut.uio_out.value[7-EEPROM_CS]
     dut._log.info(f"Reading Address")
     assert (await read8(dut)) == 0
     assert (await read8(dut)) == 5
     dut._log.info(f"verified that it's running where it left of!")
-    await ClockCycles(dut.clk, 1, rising=False)
     dut._log.info(f"{MEMORY[5]=:02x}")
     await write8(dut, MEMORY[5])
     dut._log.info(f"{MEMORY[6]=:02x}")

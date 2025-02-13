@@ -27,13 +27,11 @@ module tb ();
   wire VGND = 1'b0;
 `endif
 
-  // Replace tt_um_jimktrains_vslc with your module name:
   tt_um_jimktrains_vslc user_project (
 
-      // Include power ports for the Gate Level test:
 `ifdef GL_TEST
-      .VPWR(VPWR),
-      .VGND(VGND),
+   .VPWR(VPWR),
+   .VGND(VGND),
 `endif
 
       .ui_in  (ui_in),    // Dedicated inputs
@@ -45,5 +43,31 @@ module tb ();
       .clk    (clk),      // clock
       .rst_n  (rst_n)     // not reset
   );
+
+`ifdef GL_TEST
+  wire [7:0]stack = {
+    // user_project.\core.exec.stack[15] ,
+    // user_project.\core.exec.stack[14] ,
+    // user_project.\core.exec.stack[13] ,
+    // user_project.\core.exec.stack[12] ,
+    // user_project.\core.exec.stack[11] ,
+    // user_project.\core.exec.stack[10] ,
+    // user_project.\core.exec.stack[9] ,
+    // user_project.\core.exec.stack[8] ,
+    user_project.\core.exec.stack[7] ,
+    user_project.\core.exec.stack[6] ,
+    user_project.\core.exec.stack[5] ,
+    user_project.\core.exec.stack[4] ,
+    user_project.\core.exec.stack[3] ,
+    user_project.\core.exec.hos ,
+    user_project.\core.exec.nos ,
+    user_project.\core.exec.stack[0]
+  };
+`endif
+`ifndef GL_TEST
+  wire [7:0]stack = user_project.core.exec.stack ;
+`endif
+  wire tos = stack[0];
+
 
 endmodule

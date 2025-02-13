@@ -1,3 +1,4 @@
+src/obj_dir
 src/_tt_fpga_top.v
 build
 *.png

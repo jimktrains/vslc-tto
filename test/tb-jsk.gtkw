@@ -1,86 +1,35 @@
 [*]
 [*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
-[*] Fri Jan 31 04:51:25 2025
+[*] Wed Feb 12 14:15:19 2025
 [*]
 [dumpfile] "/home/jim/projects/github.com/jimktrains/vslc-tto/test/tb.vcd"
-[dumpfile_mtime] "Fri Jan 31 04:47:52 2025"
-[dumpfile_size] 29824
+[dumpfile_mtime] "Wed Feb 12 14:13:57 2025"
+[dumpfile_size] 49465
 [savefile] "/home/jim/projects/github.com/jimktrains/vslc-tto/test/tb-jsk.gtkw"
-[timestart] 0
-[size] 1366 719
-[pos] -1 -1
+[timestart] 5689700000
+[size] 1600 1176
+[pos] -808 -1226
 *-26.006857 755000000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb.
+[treeopen] tb.user_project.
 [sst_width] 214
 [signals_width] 230
 [sst_expanded] 1
-[sst_vpaned_height] 201
+[sst_vpaned_height] 365
 @28
 tb.user_project.ena
 tb.user_project.clk
 tb.user_project.rst_n
-tb.user_project.fetch_count[2:0]
 @22
-tb.user_project.fetch_state[3:0]
 tb.user_project.stack[15:0]
 @28
 (0)tb.user_project.uo_out[7:0]
+tb.user_project.core.copi
+tb.user_project.core.cipo
+tb.user_project.core.spi_clk
 @22
-tb.user_project.fetch_prev_state[3:0]
-@c00022
-tb.user_project.instr[7:0]
-@28
-(0)tb.user_project.instr[7:0]
-(1)tb.user_project.instr[7:0]
-(2)tb.user_project.instr[7:0]
-(3)tb.user_project.instr[7:0]
-(4)tb.user_project.instr[7:0]
-(5)tb.user_project.instr[7:0]
-(6)tb.user_project.instr[7:0]
-(7)tb.user_project.instr[7:0]
-@1401200
--group_end
-@28
-tb.user_project.timer_enabled
-tb.user_project.timer_out
-@22
-tb.user_project.timer_counter[15:0]
-@29
-tb.user_project.stack_out
-@28
-tb.user_project.eeprom_copi
-tb.user_project.eeprom_cs
-tb.user_project.eeprom_sck
-@200
--Inputs
-@22
-tb.user_project.ui_in[7:0]
-@200
--Bidirectional Pins
-@22
-tb.user_project.uio_in[7:0]
-@c00022
-tb.user_project.uio_oe[7:0]
-@1401200
--group_end
-@800022
-tb.user_project.uio_out[7:0]
-@1001200
--group_end
-@200
--Output Pins
-@c00022
-tb.user_project.uo_out[7:0]
-@28
-(0)tb.user_project.uo_out[7:0]
-(1)tb.user_project.uo_out[7:0]
-(2)tb.user_project.uo_out[7:0]
-(3)tb.user_project.uo_out[7:0]
-(4)tb.user_project.uo_out[7:0]
-(5)tb.user_project.uo_out[7:0]
-(6)tb.user_project.uo_out[7:0]
-(7)tb.user_project.uo_out[7:0]
-@1401200
--group_end
+tb.user_project.core.ui_in[7:0]
+@23
+tb.user_project.core.stack[15:0]
 [pattern_trace] 1
 [pattern_trace] 0

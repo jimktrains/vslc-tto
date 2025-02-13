@@ -5,7 +5,13 @@
 SIM ?= icarus
 TOPLEVEL_LANG ?= verilog
 SRC_DIR = $(PWD)/../src
-PROJECT_SOURCES = tt_um_jimktrains_vslc.v
+PROJECT_SOURCES = tt_um_jimktrains_vslc.v \
+									tt_um_jimktrains_vslc_core.v \
+									tt_um_jimktrains_vslc_eeprom_reader.v \
+									tt_um_jimktrains_vslc_executor.v \
+									tt_um_jimktrains_vslc_timer.v \
+									tt_um_jimktrains_vslc_servo.v
+
 
 ifneq ($(GATES),yes)
 
@@ -16,7 +22,7 @@ VERILOG_SOURCES += $(addprefix $(SRC_DIR)/,$(PROJECT_SOURCES))
 else
 
 # Gate level simulation:
-	
+
 PDK_ROOT        ?= /usr/local/share/pdk
 SIM_BUILD				= sim_build/gl
 COMPILE_ARGS    += -DGL_TEST
