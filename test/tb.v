@@ -63,11 +63,8 @@ module tb ();
     user_project.\core.exec.nos ,
     user_project.\core.exec.stack[0]
   };
-`endif
-`ifndef GL_TEST
+`else
   wire [7:0]stack = user_project.core.exec.stack ;
 `endif
   wire tos = stack[0];
-
-
 endmodule

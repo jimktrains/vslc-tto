@@ -9,9 +9,7 @@
 module my_logo ();
 endmodule
 
-
 module tt_um_jimktrains_vslc (
-
   input  wire [7:0] ui_in,   // Dedicated inputs
   output wire [7:0] uo_out,   // Dedicated outputs
   input  wire [7:0] uio_in,   // IOs: Input path
@@ -25,12 +23,6 @@ module tt_um_jimktrains_vslc (
   (* keep *)
   my_logo logo();
 
-wire addr_strobe;
-wire [2:0]_unused;
-wire scan_cycle_clk;
-
-assign _unused = {addr_strobe, scan_cycle_clk, ena};
-
 tt_um_jimktrains_vslc_core core (
   ui_in,
   uo_out,
@@ -39,8 +31,6 @@ tt_um_jimktrains_vslc_core core (
   uio_oe,
   ena,
   clk,
-  rst_n,
-  addr_strobe,
-  scan_cycle_clk
+  rst_n
 );
 endmodule

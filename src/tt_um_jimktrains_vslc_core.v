@@ -13,22 +13,17 @@ module tt_um_jimktrains_vslc_core (
   output wire [7:0] uio_oe,
   input  wire       ena,
   input  wire       clk,
-  input  wire       rst_n,
-  output wire addr_strobe,
-  output wire scan_cycle_clk_w
+  input  wire       rst_n
 );
-  assign addr_strobe = eeprom_read_ready;
   wire instr_ready;
 
   wire [7:0] eeprom_read_buf;
-  wire [9:0] eeprom_addr_read;
+  wire [8:0] eeprom_addr_read;
   wire eeprom_read_ready;
 
   reg eeprom_restart_read;
 
   wire eeprom_cs_n;
-  assign uio_out[EEPROM_CS] = eeprom_cs_n;
-  wire [3:0]bit_counter;
 
   reg rst_n_sync_reg;
   wire rst_n_sync;
@@ -41,15 +36,9 @@ module tt_um_jimktrains_vslc_core (
   reg [3:0] spi_clk_div;
   reg [15:0] counter;
 
-  // I think that this is frowned upon and actually creates multiple
-  // clock domains. However, everything "below" this module uses this
-  // as it's primary clock.
-  //
-  // The only exception is that counter is used to derive some other
-  // internal clock strobes.
+  // This isn't being used in any sensetivities. It acts as a strobe.
   wire spi_clk;
   assign spi_clk = spi_clk_div == 0 ? clk : counter[spi_clk_div-1];
-  wire eeprom_rw;
 
   tt_um_jimktrains_vslc_eeprom_reader eereader(
     clk,
@@ -61,13 +50,14 @@ module tt_um_jimktrains_vslc_core (
     cipo,
     copi,
     eeprom_cs_n,
-    eeprom_rw,
     eeprom_read_ready,
     eeprom_read_buf,
-    eeprom_addr_read,
-    bit_counter
+    eeprom_addr_read
   );
 
+  wire timer_enabled;
+  wire timer_output;
+  wire servo_output;
 
   tt_um_jimktrains_vslc_executor exec(
     clk,
@@ -77,46 +67,51 @@ module tt_um_jimktrains_vslc_core (
     eeprom_read_buf,
     ui_in_reg_w,
     ui_in_prev_reg_w,
-    uo_out
+    uo_out,
+    timer_enabled,
+    timer_output,
+    servo_output
   );
 
   wire _unused = ena;
 
   // uio_out
-  localparam SPI_SD                = 3'h0;
-  localparam SPI_CLK               = 3'h1;
-  localparam EEPROM_CS             = 3'h2;
-  localparam STACK_OUT             = 3'h3;
-  localparam TOS_OUT               = 3'h4;
-  localparam SCAN_CYCLE_OUT        = 3'h5;
-  localparam EEPROM_HOLD           = 3'h6;
-  localparam SCAN_CYCLE_TRIGGER_IN = 3'h7;
-
-  // uo_out
-  localparam TIMER_OUTPUT          = 3'h7;
+  localparam EEPROM_CS  = 3'h0;
+  localparam SPI_COPI   = 3'h1;
+  localparam SPI_CIPO   = 3'h2;
+  localparam SPI_CLK    = 3'h3;
+  localparam TIMER_OUT  = 3'h4;
+  localparam TIMER_CMPL = 3'h5;
+  localparam SERVO_OUT  = 3'h6;
+  localparam UIO_7      = 3'h7;
 
   wire copi;
   wire cipo;
-  wire scan_cycle_trigger_in;
 
-  assign uio_oe[SPI_SD]  = eeprom_rw;
-  assign uio_oe[EEPROM_HOLD] = 1;
   assign uio_oe[EEPROM_CS] = 1;
-  assign uio_oe[STACK_OUT]  = 0;
+  assign uio_oe[SPI_COPI]  = 1;
+  assign uio_oe[SPI_CIPO]  = 0;
   assign uio_oe[SPI_CLK]  = 1;
-  assign uio_oe[SCAN_CYCLE_OUT] = 1;
-  assign uio_oe[TOS_OUT] = 0;
-  assign uio_oe[SCAN_CYCLE_TRIGGER_IN]  = 0;
 
-  assign cipo = uio_in[SPI_SD];
-  assign uio_out[SPI_SD] = copi;
-  assign uio_out[EEPROM_HOLD] = eeprom_hold_n;
-  assign uio_out[STACK_OUT] = 1;
-  assign uio_out[SPI_CLK]  = spi_clk;
-  assign uio_out[SCAN_CYCLE_OUT]  = scan_cycle_clk;
-  assign uio_out[TOS_OUT]  = 1;
-  assign uio_out[SCAN_CYCLE_TRIGGER_IN]  = 0;
-  assign scan_cycle_trigger_in = uio_in[SCAN_CYCLE_TRIGGER_IN];
+  assign uio_oe[TIMER_OUT] = 1;
+  assign uio_oe[TIMER_CMPL] = 1;
+  assign uio_oe[SERVO_OUT] = 1;
+  assign uio_oe[UIO_7] = 0;
+
+  assign uio_out[EEPROM_CS]  = eeprom_cs_n;
+  assign uio_out[SPI_CIPO]   = 0;
+  assign cipo = uio_in[SPI_CIPO];
+  assign uio_out[SPI_COPI]   = copi;
+  assign uio_out[SPI_CLK]    = spi_clk;
+  assign uio_out[TIMER_OUT]  = timer_enabled && timer_output && timer_dead_time;
+  assign uio_out[TIMER_CMPL] = timer_enabled && !timer_output && timer_dead_time;
+  assign uio_out[SERVO_OUT]  = servo_output;
+  assign uio_out[UIO_7]      = 0;
+
+  reg timer_output_prev;
+  wire timer_dead_time = timer_output_prev == timer_output;
+
+
 
   reg [7:0]ui_in_reg;
   reg [7:0]ui_in_prev_reg;
@@ -127,25 +122,19 @@ module tt_um_jimktrains_vslc_core (
   assign ui_in_reg_w = ui_in_reg;
   assign ui_in_prev_reg_w = ui_in_prev_reg;
 
-  // reg [7:1]instr_buf;
-  // wire [7:0]instr = {instr_buf, cipo};
-
-  reg [9:0]start_addr;
-  wire [9:0] eeprom_start_addr = start_addr;
-  reg [9:0]end_addr;
+  reg [4:0]start_addr;
+  wire [8:0] eeprom_start_addr = {4'b0, start_addr};
+  reg [8:0]end_addr;
 
   wire auto_scan_cycle;
   assign auto_scan_cycle = eeprom_restart_read;
 
-  reg scan_cycle_trigger_in_reg;
-  assign scan_cycle_clk_w = scan_cycle_clk;
   reg scan_cycle_clk;
   reg scan_cycle_clk_prev;
 
   assign instr_ready = eeprom_read_ready && (eeprom_addr_read > 3);
 
   always @(posedge clk) begin
-    scan_cycle_trigger_in_reg <= scan_cycle_trigger_in;
     if (!rst_n_sync) begin
       counter <= 0;
       ui_in_reg <= ui_in;
@@ -155,7 +144,7 @@ module tt_um_jimktrains_vslc_core (
       scan_cycle_clk <= 0;
     end else begin
       counter <= counter + 1;
-      scan_cycle_clk <= auto_scan_cycle || scan_cycle_trigger_in_reg;
+      scan_cycle_clk <= auto_scan_cycle;
       scan_cycle_clk_prev <= scan_cycle_clk;
       if (scan_cycle_clk && !scan_cycle_clk_prev) begin
         ui_in_reg <= ui_in;
@@ -166,6 +155,7 @@ module tt_um_jimktrains_vslc_core (
 
   always @(negedge clk) begin
     rst_n_sync_reg <= rst_n;
+    timer_output_prev <= timer_output;
     if (!rst_n_sync) begin
       start_addr <= 0;
       end_addr <= 0;
@@ -173,12 +163,12 @@ module tt_um_jimktrains_vslc_core (
       eeprom_hold_n <= 1;
     end else begin
       if (eeprom_read_ready) begin
-        start_addr[9:8] <= (eeprom_addr_read == 0) ? eeprom_read_buf[1:0] : start_addr[9:8];
-        start_addr[7:0] <= (eeprom_addr_read == 1) ? eeprom_read_buf : start_addr[7:0];
-        end_addr[9:8] <= (eeprom_addr_read == 2) ? eeprom_read_buf[1:0] : end_addr[9:8];
+        //start_addr[8] <= (eeprom_addr_read == 0) ? eeprom_read_buf[0] : start_addr[8];
+        start_addr[4:0] <= (eeprom_addr_read == 1) ? eeprom_read_buf[4:0] : start_addr;
+        end_addr[8] <= (eeprom_addr_read == 2) ? eeprom_read_buf[0] : end_addr[8];
         end_addr[7:0] <= (eeprom_addr_read == 3) ? eeprom_read_buf : end_addr[7:0];
 
-        eeprom_restart_read <= end_addr != 10'b0 && eeprom_addr_read >= end_addr;
+        eeprom_restart_read <= end_addr != 9'b0 && eeprom_addr_read == end_addr;
       end else begin
         eeprom_restart_read <= eeprom_restart_read;
       end
