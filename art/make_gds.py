@@ -26,7 +26,7 @@ BOUNDARY_LAYERS = [
 # laid all the way down.
 PIXEL_LAYERS = [
     (68, 20), # met1, drawing
-    (69, 20), # met2, drawing
+    #(69, 20), # met2, drawing
     #(70, 20), # met3, drawing
     #(71, 20), # met4, drawing
 ]
