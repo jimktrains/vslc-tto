@@ -10,7 +10,7 @@ import gdspy
 import sys
 from PIL import Image
 
-PNG_NAME = "art/my_logo_49.png"
+PNG_NAME = "art/new-logo.png"
 CELL_NAME = "my_logo"
 GDS_NAME = "macros/my_logo.gds"
 
