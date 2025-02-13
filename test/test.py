@@ -183,7 +183,7 @@ msg = lambda m : (m, None)
 
 def test_stack(expected):
     def y(dut):
-        if dut.stack.value[8:15] != expected:
+        if dut.stack.value[0:7] != expected:
             dut._log.info(f"{dut.stack.value=}")
             dut._log.info(f"expected stack={expected:08b}")
             return False

@@ -45,15 +45,15 @@ module tb ();
   );
 
 `ifdef GL_TEST
-  wire [15:0]stack = {
-    user_project.\core.exec.stack[15] ,
-    user_project.\core.exec.stack[14] ,
-    user_project.\core.exec.stack[13] ,
-    user_project.\core.exec.stack[12] ,
-    user_project.\core.exec.stack[11] ,
-    user_project.\core.exec.stack[10] ,
-    user_project.\core.exec.stack[9] ,
-    user_project.\core.exec.stack[8] ,
+  wire [7:0]stack = {
+    // user_project.\core.exec.stack[15] ,
+    // user_project.\core.exec.stack[14] ,
+    // user_project.\core.exec.stack[13] ,
+    // user_project.\core.exec.stack[12] ,
+    // user_project.\core.exec.stack[11] ,
+    // user_project.\core.exec.stack[10] ,
+    // user_project.\core.exec.stack[9] ,
+    // user_project.\core.exec.stack[8] ,
     user_project.\core.exec.stack[7] ,
     user_project.\core.exec.stack[6] ,
     user_project.\core.exec.stack[5] ,
@@ -65,7 +65,7 @@ module tb ();
   };
 `endif
 `ifndef GL_TEST
-  wire [15:0]stack = user_project.core.exec.stack ;
+  wire [7:0]stack = user_project.core.exec.stack ;
 `endif
   wire tos = stack[0];
 

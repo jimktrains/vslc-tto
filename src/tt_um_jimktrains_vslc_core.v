@@ -15,8 +15,7 @@ module tt_um_jimktrains_vslc_core (
   input  wire       clk,
   input  wire       rst_n,
   output wire addr_strobe,
-  output wire scan_cycle_clk_w,
-  output wire [15:0]stack
+  output wire scan_cycle_clk_w
 );
   assign addr_strobe = eeprom_read_ready;
   wire instr_ready;
@@ -48,7 +47,8 @@ module tt_um_jimktrains_vslc_core (
   //
   // The only exception is that counter is used to derive some other
   // internal clock strobes.
-  wire spi_clk   = spi_clk_div == 0 ? clk : counter[spi_clk_div-1];
+  wire spi_clk;
+  assign spi_clk = spi_clk_div == 0 ? clk : counter[spi_clk_div-1];
   wire eeprom_rw;
 
   tt_um_jimktrains_vslc_eeprom_reader eereader(
@@ -70,15 +70,14 @@ module tt_um_jimktrains_vslc_core (
 
 
   tt_um_jimktrains_vslc_executor exec(
-    spi_clk,
+    clk,
     counter,
     instr_ready,
     rst_n_sync,
     eeprom_read_buf,
     ui_in_reg_w,
     ui_in_prev_reg_w,
-    uo_out,
-    stack
+    uo_out
   );
 
   wire _unused = ena;
@@ -153,6 +152,7 @@ module tt_um_jimktrains_vslc_core (
       ui_in_prev_reg <= ui_in;
       scan_cycle_clk_prev <= 0;
       spi_clk_div <= 3;
+      scan_cycle_clk <= 0;
     end else begin
       counter <= counter + 1;
       scan_cycle_clk <= auto_scan_cycle || scan_cycle_trigger_in_reg;

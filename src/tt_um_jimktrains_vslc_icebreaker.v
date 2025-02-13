@@ -86,7 +86,7 @@ reg [31:0]counter = 0;
 
 reg rst_n = 0;
 assign LED_GRN_N = !uo_out[7];
-assign LED_RED_N = !scan_cycle_clk;
+assign LED_RED_N = 1;
 
 // assign {P1A1, FLASH_IO0, P1A2, P1A3, P1A4, P1A7, P1A8, P1A9, P1A10, FLASH_IO1} =  {en1, en2, a,f,b,g,c,d,e,dp};
 assign P1A1 = uo_out[0];
@@ -99,8 +99,6 @@ assign P1A8 = uo_out[5];
 assign P1A9 = uo_out[6];
 assign P1A10= uo_out[7];
 
-wire [15:0] stack;
-
 tt_um_jimktrains_vslc_core core (
   ui_in,
   uo_out,
@@ -111,8 +109,7 @@ tt_um_jimktrains_vslc_core core (
   CLK,
   rst_n,
   addr_strobe,
-  scan_cycle_clk,
-  stack
+  scan_cycle_clk
 );
 
 wire scan_cycle_clk;

@@ -13,19 +13,19 @@ module tt_um_jimktrains_vslc_executor (
   input [7:0] instr,
   input [7:0] ui_in,
   input [7:0] ui_in_prev,
-  output [7:0] uo_out,
-  output [15:0] stack_out
+  output [7:0] uo_out
 );
-  assign stack_out = stack;
   reg [4:0] timer_clk_div;
   reg [4:0] servo_clk_div;
   // These are used as clock strobes, and not as part of an always
   // block's sensitivities.
-  wire timer_clk = timer_clk_div == 0 ? clk : counter[timer_clk_div-1];
-  wire servo_clk = servo_clk_div == 0 ? clk : counter[servo_clk_div-1];
+  wire timer_clk;
+  assign timer_clk = timer_clk_div == 0 ? clk : counter[timer_clk_div-1];
+  wire servo_clk;
+  assign servo_clk = servo_clk_div == 0 ? clk : counter[servo_clk_div-1];
 
-  reg [15:0] timer_period_a;
-  reg [15:0] timer_period_b;
+  reg [7:0] timer_period_a;
+  reg [7:0] timer_period_b;
   wire timer_enabled;
   wire timer_output;
 
@@ -71,7 +71,7 @@ module tt_um_jimktrains_vslc_executor (
   );
 
 
-  localparam STACK_DEPTH = 16;
+  localparam STACK_DEPTH = 8;
   reg [(STACK_DEPTH-1):0]stack;
   reg [7:0]uo_out_reg;
   assign uo_out = uo_out_reg;
@@ -153,10 +153,13 @@ module tt_um_jimktrains_vslc_executor (
   reg exec_state;
   localparam EXEC_STATE_INSTR = 0;
   localparam EXEC_STATE_EXTRA_BYTE_1 = 1;
+  reg instr_ready_prev;
+  wire instr_ready_negedge = instr_ready_prev && !instr_ready;
 
   always @(negedge clk) begin
+    instr_ready_prev <= instr_ready;
     if (!rst_n) begin
-      stack <= 16'b0;
+      stack <= 8'b0;
       uo_out_reg <= 8'b0;
       timer_period_a <= 183;
       timer_period_b <= 183;
@@ -168,58 +171,63 @@ module tt_um_jimktrains_vslc_executor (
       timer_clk_div <= 14;
       servo_clk_div <= 10;
     end else begin
-      prev_instr <= exec_state == EXEC_STATE_INSTR ? instr : prev_instr;
-      exec_state <= exec_state == EXEC_STATE_EXTRA_BYTE_1 ? EXEC_STATE_INSTR : (
-                    instr_sparam && (tos == instr_sparam_expected) ? EXEC_STATE_EXTRA_BYTE_1 : EXEC_STATE_INSTR);
 
+      servo_freq_val <= servo_freq_val;
+      servo_reset_val <= servo_reset_val;
+      servo_set_val <= servo_set_val;
       if (timer_enabled) begin
         sfr[SFR_TIMER_OUTPUT] <= timer_output;
         if (sfr[SFR_TIMER_OUTPUT_ENABLE]) begin
-          uo_out_reg[6] <= timer_output;
+          uo_out_reg[3] <= timer_output;
         end
       end
       if (servo_enabled) begin
         sfr[SFR_SERVO_OUTPUT] <= servo_output;
-        uo_out_reg[7] <= servo_output;
+        uo_out_reg[4] <= servo_output;
       end
-      if (exec_state == EXEC_STATE_EXTRA_BYTE_1) begin
-        case (regid)
-          0: begin end // Not Implemented
-          1: timer_clk_div <= instr[4:0];
-          2: timer_period_a[7:0] <= instr;
-          3: timer_period_b[7:0] <= instr;
-          4: servo_clk_div <= instr[4:0];
-          5: servo_freq_val[7:0] <= instr;
-          6: servo_reset_val[3:0] <= instr[3:0];
-          7: servo_set_val[3:0] <= instr[3:0];
-        endcase
-      end else if (instr_ready) begin
-        stack[STACK_DEPTH-1] <= instr_clr ? 0 : (
-                     instr_setall ? 1 : (
-                     shift_left_1 ? stack[STACK_DEPTH-2] : (
-                     shift_right_1 ? stack[0] : stack[STACK_DEPTH-1])));
-        stack[STACK_DEPTH-2:3] <= instr_clr ? 12'b0 : (
-                       instr_setall ? 12'hFF : (
-                       shift_left_1 ? stack[STACK_DEPTH-3:2] : (
-                       shift_right_1 ? stack[STACK_DEPTH-1:4] : stack[STACK_DEPTH-2:3])));
-        stack[2] <= instr_clr ? 0 : (
-                    instr_setall ? 1 : (
-                    has_3_result ? res2 : (
-                    shift_left_1 ? stack[1] : (
-                    shift_right_1 ? stack[3] : stack[2]))));
-        stack[1] <= instr_clr ? 0 : (
-                    instr_setall ? 1 : (
-                    has_2_result ? res1 : (
-                    shift_left_1 ? stack[0] : (
-                    shift_right_1 ? stack[2] : stack[1]))));
-        stack[0] <= instr_clr ? 0 : (
-                    instr_setall ? 1 : (
-                    has_1_result ? res0 : (
-                    shift_left_1 ? 0 : (
-                    shift_right_1 ? stack[1] : stack[0]))));
-        if (!keepval) begin
-          if (sfrreg) sfr[sfrid] <= val;
-          else uo_out_reg[regid] <= val;
+      if (instr_ready_negedge) begin
+        prev_instr <= exec_state == EXEC_STATE_INSTR ? instr : prev_instr;
+        exec_state <= exec_state == EXEC_STATE_EXTRA_BYTE_1 ? EXEC_STATE_INSTR : (
+                      instr_sparam && (tos == instr_sparam_expected) ? EXEC_STATE_EXTRA_BYTE_1 : EXEC_STATE_INSTR);
+        if (exec_state == EXEC_STATE_EXTRA_BYTE_1) begin
+          case (regid)
+            0: begin end // Not Implemented
+            1: timer_clk_div <= instr[4:0];
+            2: timer_period_a[7:0] <= instr;
+            3: timer_period_b[7:0] <= instr;
+            4: servo_clk_div <= instr[4:0];
+            5: servo_freq_val[7:0] <= instr;
+            6: servo_reset_val[3:0] <= instr[3:0];
+            7: servo_set_val[3:0] <= instr[3:0];
+          endcase
+        end else begin
+          stack[STACK_DEPTH-1] <= instr_clr ? 0 : (
+            instr_setall ? 1 : (
+            shift_left_1 ? stack[STACK_DEPTH-2] : (
+            shift_right_1 ? 0 : stack[STACK_DEPTH-1])));
+          stack[STACK_DEPTH-2:3] <= instr_clr ? 4'b0 : (
+            instr_setall ? 4'hF : (
+            shift_left_1 ? stack[STACK_DEPTH-3:2] : (
+            shift_right_1 ? stack[STACK_DEPTH-1:4] : stack[STACK_DEPTH-2:3])));
+          stack[2] <= instr_clr ? 0 : (
+            instr_setall ? 1 : (
+            has_3_result ? res2 : (
+            shift_left_1 ? stack[1] : (
+            shift_right_1 ? stack[3] : stack[2]))));
+          stack[1] <= instr_clr ? 0 : (
+            instr_setall ? 1 : (
+            has_2_result ? res1 : (
+            shift_left_1 ? stack[0] : (
+            shift_right_1 ? stack[2] : stack[1]))));
+          stack[0] <= instr_clr ? 0 : (
+            instr_setall ? 1 : (
+            has_1_result ? res0 : (
+            shift_left_1 ? 0 : (
+            shift_right_1 ? stack[1] : stack[0]))));
+          if (!keepval) begin
+            if (sfrreg) sfr[sfrid] <= val;
+            else uo_out_reg[regid] <= val;
+          end
         end
       end
     end

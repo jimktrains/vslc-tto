@@ -21,6 +21,7 @@ module tt_um_jimktrains_vslc_servo(
   reg servo_clk_prev;
 
   assign servo_output = servo_output_r;
+  wire servo_clk_posedge = (!servo_clk_prev && servo_clk);
 
   always @(posedge clk) begin
     servo_clk_prev <= servo_clk;
@@ -28,7 +29,7 @@ module tt_um_jimktrains_vslc_servo(
       servo_output_r <= 1'b1;
       servo_counter <= 0;
     end else begin
-      if (!servo_clk_prev && servo_clk) begin
+      if (servo_clk_posedge) begin
         if ((servo_value == 1'b1) && (servo_counter == {8'b0, servo_set_val})) begin
           servo_counter <= servo_counter + 1;
           servo_output_r <= 0;
@@ -42,6 +43,9 @@ module tt_um_jimktrains_vslc_servo(
           servo_counter <= servo_counter + 1;
           servo_output_r <= servo_output_r;
         end
+      end else begin
+          servo_counter <= servo_counter;
+          servo_output_r <= servo_output_r;
       end
     end
   end
