@@ -80,3 +80,11 @@ write-eeprom:
 	minipro -p 25LC080D -w examples/prog1.eeprom.bin
 
 .PHONY: test harden clean
+
+artwork: art/my_logo_49.png macros/my_logo.gds macros/my_logo.lef
+
+macros/my_logo.gds: art/my_logo_49.png
+	./art/make_gds.py
+
+macros/my_logo.lef: macros/my_logo.gds
+	cd macros && cat ../art/make_lef.tcl | magic -rcfile /usr/local/share/pdk/sky130A/libs.tech/magic/sky130A.magicrc -noconsole

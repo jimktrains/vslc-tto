@@ -10,9 +10,9 @@ import gdspy
 import sys
 from PIL import Image
 
-PNG_NAME = "my_logo.png"
+PNG_NAME = "art/my_logo_49.png"
 CELL_NAME = "my_logo"
-GDS_NAME = "my_logo.gds"
+GDS_NAME = "macros/my_logo.gds"
 
 BOUNDARY_LAYERS = [
     (235, 4), # prBndry, boundary
@@ -25,10 +25,10 @@ BOUNDARY_LAYERS = [
 PIXEL_LAYERS = [
     (68, 20), # met1, drawing
     (69, 20), # met2, drawing
-    (70, 20), # met3, drawing
-    (71, 20), # met4, drawing
+    #(70, 20), # met3, drawing
+    #(71, 20), # met4, drawing
 ]
-PIXEL_SIZE = 0.28 # um
+PIXEL_SIZE = 0.35 # um
 VERBOSITY = 1
 
 # Process arguments
