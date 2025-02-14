@@ -8,6 +8,7 @@ title = "VSLC - Very Small Logic Controller"
 [output.markdown]
 
 [preprocessor.graphviz]
+command = "mdbook-graphviz"
 output-to-file = true
 
 [preprocessor.plantuml]

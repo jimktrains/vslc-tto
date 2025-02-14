@@ -1,12 +1,13 @@
-## General Description
+## General Architecture
 
 - Stack machine
-  - Code executes until a cycle start happens or the end of code memory is
-    reached, in which case a new cycle is started
+- Code executes until the end of code memory is reached, in which case a
+  new cycle is started
 - 8 input bits/registers mapped to pins
 - 8 output bits/registers mapped to pins
 - 16 bit data stack
-- 1 10-bit timer/counter with clock divisor
+- 1 timer/counter with clock divisor
+- 1 timer/counter for driving a servo
 
 ### Opcodes
 
@@ -44,7 +45,7 @@
        * 1: Other
 
 
-### Register Operations
+#### Register Operations
 
     PUSH reg    0000 IRRR
     POP  reg    0001 1RRR
@@ -55,7 +56,7 @@
     SET sfr     0110 RRRR
     RESET sfr   0111 RRRR
 
-### Logical Operations
+#### Logical Operations
     
     AND         1010 0001
     NAND        1010 1110
@@ -76,19 +77,19 @@
     NOT         1001 0011
     OVERNOT     1010 0101
     
-### Temporal Operations
+#### Temporal Operations
 
     RISING  reg 1100 IRRR
     FALLING reg 1101 IRRR
     
-### Parameters
+#### Parameters
 
 These are followed by a byte with the value to set
 
     SPARAM0 parm 1110 0PPP XXXX XXXX
     SPARAM1 parm 1110 1PPP XXXX XXXX
     
-## Other
+#### Other
 
     CLR         1111 0000
     SETALL      1111 0001
@@ -96,7 +97,7 @@ These are followed by a byte with the value to set
     ROT         1111 0011
     NOP         1111 1111
 
-## Special Function Registers SFR
+### Special Function Registers SFR
 
 * 0x0 Timer Enable
 * 0x1 Timer Output
@@ -104,7 +105,7 @@ These are followed by a byte with the value to set
 * 0x3 Servo Value
 * 0x4 Servo Output
 
-## Parameter
+### Parameter
 * 0x0 SPI Clock Divider (Not Implemented)
 * 0x1 Timer0 Clock Divider (4 bits)
 * 0x2 Timer0 Counter A (Not Implemented)
