@@ -33,9 +33,8 @@ happens during cycle execution, it will not be seen by the program.
 ![](01_how_it_worksmd_0.generated.svg)
 
 
- ``` {=latex}
-\newpage
-  ``` 
+
+------
 
 
 ## How to test
@@ -157,9 +156,8 @@ and a new scan cycle is started which latches the input. The controller
 will then send the read command (0x03) for address 0x0004 and begin
 execution at the first byte it receives. This will continue until the
 controller is powered down.
- ``` {=latex}
-\newpage
-  ``` 
+
+------
 
 
 ## External hardware
@@ -167,9 +165,8 @@ controller is powered down.
 The controller expects something that presents as an EEPROM that accepts
 16-bit addresses and will provide continous data while the clock and chip
 select are active.
- ``` {=latex}
-\newpage
-  ``` 
+
+------
 
 
 ## General Architecture
@@ -298,9 +295,8 @@ NOP         1111 1111
 * 0x5 Servo0 Frequency Value (Not Implemented)
 * 0x6 Servo0 Reset Value (Not Implemented)
 * 0x7 Servo0 Set Value (4 bits)
- ``` {=latex}
-\newpage
-  ``` 
+
+------
 
 
 ## Timer
@@ -325,9 +321,8 @@ transitions.
 * 0x1 Timer0 Clock Divider (4 bits)
 * 0x2 Timer0 Counter A (Not Implemented)
 * 0x3 Timer0 Counter B (Not Implemented)
- ``` {=latex}
-\newpage
-  ``` 
+
+------
 
 
 ## Servo
@@ -356,9 +351,8 @@ The servo's output is always available on `uio_out[6]`;
 * 0x5 Servo0 Frequency Value (Not Implemented)
 * 0x6 Servo0 Reset Value (Not Implemented)
 * 0x7 Servo0 Set Value (4 bits)
- ``` {=latex}
-\newpage
-  ``` 
+
+------
 
 
 ## Assembler
@@ -445,8 +439,7 @@ OR
 OR
 POP o2
 ````
- ``` {=latex}
-\newpage
-  ``` 
+
+------
 
 
