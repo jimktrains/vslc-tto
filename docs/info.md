@@ -44,7 +44,7 @@ Place a program on EEPROM (or an emulator), and use the IO pins.
 
 Example 0 is a short and a good place to start.
 
-The file \<examples/prog0.vslc> is:
+The file [examples/prog0.vslc](examples/prog0.vslc) is:
 
 ````
 PUSH i0
@@ -58,26 +58,26 @@ This program begins by taking the value of input 0 at the last positive
 edge of the scan cycle clock and placing it on the stack.
 
 ````
-top of stack: <i0>
+top of stack: [i0](i0)
 ````
 
 It then duplicates that value.
 
 ````
-top of stack: <i0> <i0>
+top of stack: [i0](i0) [i0](i0)
 ````
 
 followd by popping one instance from the top of the stack and placing it
 in the output 0 register.
 
 ````
-top of stack: <i0>
+top of stack: [i0](i0)
 ````
 
 The top of the stack is then inverted.
 
 ````
-top of stack: /<i0>
+top of stack: /[i0](i0)
 ````
 
 Finally, that value is popped to output register 1.
@@ -400,7 +400,7 @@ register names and may be aliased via a `.define`.
 
 #### Example
 
-See \<examples/prog2.vslc> and \<examples/prog2.final.vslc> for an example
+See [examples/prog2.vslc](examples/prog2.vslc) and [examples/prog2.final.vslc](examples/prog2.final.vslc) for an example
 of implementing a counter and 7-segment decoder.
 
 ````

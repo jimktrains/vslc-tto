@@ -18,7 +18,8 @@ info.md: src/SUMMARY.md
 	mdbook clean
 	mdbook build
 	echo > info.md
-	for i in book/*; do cat $$i >> info.md; echo "\n" '```' "{=latex}\n\\\\newpage\n " '```' "\n\n" >> info.md; done
+	#for i in book/*; do cat $$i >> info.md; echo "\n" '```' "{=latex}\n\\\\newpage\n " '```' "\n\n" >> info.md; done
+	for i in book/*; do cat $$i >> info.md; echo "\n\n------\n\n" >> info.md; done
 	mv src/*.generated.svg .
 
 clean:

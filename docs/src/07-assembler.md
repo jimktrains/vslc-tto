@@ -31,7 +31,7 @@ register names and may be aliased via a `.define`.
 
 #### Example
 
-See <examples/prog2.vslc> and <examples/prog2.final.vslc> for an example
+See [examples/prog2.vslc](examples/prog2.vslc) and [examples/prog2.final.vslc](examples/prog2.final.vslc) for an example
 of implementing a counter and 7-segment decoder.
 
     .define segC o2
